@@ -30,6 +30,29 @@ Use with GitHub Copilot
 - Copilot Chat (@ mention): Type `@PiInspector` in a Copilot Chat and ask things like “capabilities”, “health”, “cpu temp”, or “system info”. The participant queries the local API and returns JSON.
 - Copilot Chat tools: The extension attempts to register tools (e.g., `pi.health`, `pi.systemInfo`) via the VS Code Language Model API when available. As an alternative, you can register the OpenAPI tool at `http://127.0.0.1:5050/openapi.json` so the agent can call `/system-info`, `/cpu-temp`, etc.
 
+Use with MCP (alternative)
+--------------------------
+If you prefer the Model Context Protocol (MCP) for cross-editor/agent portability, this project ships a tiny stdio MCP server that proxies to the same local API.
+
+- Command: `inspector-raspi-mcp --port 5050` (installed alongside `inspector-raspi`).
+- Tools exposed: `pi.health`, `pi.cpuTemp`, `pi.systemInfo`, `pi.capabilities`.
+- Ensure the HTTP API is running locally (127.0.0.1:5050) before using MCP.
+
+Example generic MCP client config:
+```json
+{
+   "mcpServers": {
+      "pi-inspector": {
+         "command": "inspector-raspi-mcp",
+         "args": ["--port", "5050"],
+         "env": { "INSPECTOR_PORT": "5050" }
+      }
+   }
+}
+```
+
+VS Code Toolsets users can also register it via a user-level MCP config (see the repository root README for details and examples).
+
 Configuration
 -------------
 - `piInspector.port` (number): Local port of the Pi Inspector API (default 5050).
