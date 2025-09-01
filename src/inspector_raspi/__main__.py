@@ -63,6 +63,79 @@ def _cpu_temperature_c() -> Optional[float]:
             return None
     return None
 
+def _device_tree_model() -> Optional[str]:
+    p = Path("/proc/device-tree/model")
+    if p.exists():
+        try:
+            return p.read_text(errors="ignore").strip("\x00\n ")
+        except Exception:
+            return None
+    return None
+
+def _cpu_revision() -> Optional[str]:
+    out = run_cmd("grep -m1 '^Revision' /proc/cpuinfo | awk '{print $3}'")
+    return out
+
+def _cpu_serial_masked() -> Optional[str]:
+    # Mask all but last 6 chars for privacy
+    out = run_cmd("grep -m1 '^Serial' /proc/cpuinfo | awk '{print $3}'")
+    if out and len(out) > 6:
+        return f"***{out[-6:]}"
+    return None
+
+def _vcgencmd_get_throttled() -> Optional[str]:
+    return run_cmd("vcgencmd get_throttled")
+
+def _gpu_mem_split() -> dict:
+    return {
+        "gpu": run_cmd("vcgencmd get_mem gpu"),
+        "arm": run_cmd("vcgencmd get_mem arm"),
+    }
+
+def _cpu_freq_mhz() -> Optional[float]:
+    # Try sysfs first
+    p = Path("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq")
+    if p.exists():
+        try:
+            khz = int(p.read_text().strip())
+            return round(khz / 1000.0, 1)
+        except Exception:
+            pass
+    # Fallback vcgencmd
+    out = run_cmd("vcgencmd measure_clock arm")
+    if out and "frequency(48)=" in out:
+        try:
+            hz = int(out.split("=")[-1])
+            return round(hz / 1_000_000.0, 1)
+        except Exception:
+            return None
+    return None
+
+def _video_devices() -> list:
+    return [str(p) for p in sorted(Path("/dev").glob("video*"))]
+
+def _wifi_ssid() -> Optional[str]:
+    return run_cmd("iwgetid -r")
+
+def _mac_addr(dev: str) -> Optional[str]:
+    p = Path(f"/sys/class/net/{dev}/address")
+    if p.exists():
+        try:
+            return p.read_text().strip()
+        except Exception:
+            return None
+    return None
+
+def _bt_present() -> bool:
+    return Path("/sys/class/bluetooth").exists() or (run_cmd("hciconfig -a") is not None)
+
+def _lsusb_summary(max_lines: int = 25) -> list:
+    out = run_cmd("lsusb")
+    if not out:
+        return []
+    lines = out.splitlines()
+    return lines[:max_lines]
+
 def _capabilities() -> dict:
     """Detect available tools and devices in a safe, quick way."""
     import shutil
@@ -80,6 +153,7 @@ def _capabilities() -> dict:
     caps = {
         "vcgencmd": shutil.which("vcgencmd") is not None,
         "glxinfo": shutil.which("glxinfo") is not None,
+        "vulkaninfo": shutil.which("vulkaninfo") is not None,
         "lsb_release": shutil.which("lsb_release") is not None,
         "lsusb": shutil.which("lsusb") is not None,
         "pip3": shutil.which("pip3") is not None,
@@ -87,9 +161,18 @@ def _capabilities() -> dict:
         "i2c_dev": bool(list(Path("/dev").glob("i2c-*"))),
         "spi_dev": bool(list(Path("/dev").glob("spi*"))),
         "gpio_mem": Path("/dev/gpiomem").exists(),
+        "video_dev": bool(list(Path("/dev").glob("video*"))),
+        "libcamera": shutil.which("libcamera-hello") is not None or shutil.which("libcamera-still") is not None,
+        "ffmpeg": shutil.which("ffmpeg") is not None,
+        "v4l2_ctl": shutil.which("v4l2-ctl") is not None,
+        "docker": shutil.which("docker") is not None,
         # Python packages
         "tflite_runtime": has_dist("tflite-runtime"),
         "onnxruntime": has_dist("onnxruntime"),
+        "torch": has_dist("torch"),
+        "tensorflow": has_dist("tensorflow") or has_dist("tensorflow-lite"),
+        "openvino": has_dist("openvino") or has_dist("openvino-dev"),
+        "opencv_python": has_dist("opencv-python"),
     }
     return caps
 
@@ -99,7 +182,10 @@ def get_system_info():
         "model": run_cmd("cat /proc/cpuinfo | grep 'Model' | head -1"),
         "arch": platform.machine(),
         "cores": psutil.cpu_count(logical=True),
-        "features": run_cmd("cat /proc/cpuinfo | grep Features | head -1")
+    "features": run_cmd("cat /proc/cpuinfo | grep Features | head -1"),
+    "revision": _cpu_revision(),
+    "serial_masked": _cpu_serial_masked(),
+    "current_freq_mhz": _cpu_freq_mhz(),
     }
 
     memory_info = {
@@ -116,7 +202,8 @@ def get_system_info():
     # GPU & video
     gpu_info = {
         "vcgencmd": run_cmd("vcgencmd version"),
-        "glxinfo": run_cmd("glxinfo | grep 'OpenGL version'")  # may need mesa-utils installed
+        "glxinfo": run_cmd("glxinfo | grep 'OpenGL version'"),  # may need mesa-utils installed
+        "gpu_mem": _gpu_mem_split(),
     }
 
     # OS & kernel
@@ -151,7 +238,10 @@ def get_system_info():
     # Networking
     network_info = {
         "interfaces": list(psutil.net_if_addrs().keys()),
-        "ip": run_cmd("hostname -I")
+        "ip": run_cmd("hostname -I"),
+        "wifi_ssid": _wifi_ssid(),
+        "mac": {iface: _mac_addr(iface) for iface in ["eth0", "wlan0"] if _mac_addr(iface)},
+        "bluetooth_present": _bt_present(),
     }
 
     # Peripherals
@@ -161,13 +251,24 @@ def get_system_info():
         "gpio": run_cmd("ls /dev/gpiomem 2>/dev/null") is not None,
         "camera": run_cmd("vcgencmd get_camera"),
         "cpu_temp_c": _cpu_temperature_c(),
+        "video_devices": _video_devices(),
     }
 
     # AI/ML
     ml_info = {
         "tflite": run_cmd("pip3 show tflite-runtime"),
         "onnxruntime": run_cmd("pip3 show onnxruntime"),
-        "coral_tpu": run_cmd("lsusb | grep 'Global Unichip Corp.'")  # Coral USB accelerator
+        "torch": run_cmd("python3 -c 'import torch,sys;print(torch.__version__)'"),
+        "opencv": run_cmd("python3 -c 'import cv2,sys;print(cv2.__version__)'"),
+        "tensorflow": run_cmd("python3 -c 'import tensorflow as tf,sys;print(tf.__version__)'"),
+        "openvino": run_cmd("python3 -c 'import openvino as ov,sys;print(ov.__version__)'"),
+        "coral_tpu": run_cmd("lsusb | grep -i 'Global Unichip\|Movidius\|Google'"),  # Coral/Myriad
+    }
+
+    # Board & power
+    board_info = {
+        "device_tree_model": _device_tree_model(),
+        "throttled": _vcgencmd_get_throttled(),
     }
 
     return {
@@ -179,7 +280,9 @@ def get_system_info():
         "python": python_info,
         "network": network_info,
         "peripherals": peripherals_info,
-        "ml": ml_info
+        "ml": ml_info,
+        "board": board_info,
+        "usb": {"lsusb": _lsusb_summary()},
     }
 
 @app.route("/system-info", methods=["GET"])

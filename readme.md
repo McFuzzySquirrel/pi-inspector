@@ -7,23 +7,101 @@ What’s inside
 -------------
 - A Flask API (loopback-only by default) exposing endpoints like `/health`, `/system-info`, `/cpu-temp`, and an OpenAPI spec.
 - A VS Code extension that calls the API and optionally registers tools for Copilot Agent Mode.
+- A minimal MCP (Model Context Protocol) server (stdio) that proxies to the API so non-Copilot agents can use the same tools.
 
 Usage
 -----
-1. Create a venv and install deps:
-	- python3 -m venv .venv
-	- source .venv/bin/activate
-	- pip install -e .
+Recommended (minimal resources, on-demand): pipx + user systemd
 
-2. Run the server (loopback only):
-	- inspector-raspi
-	- inspector-raspi -p 5052  # override port via CLI
+1) Install once with pipx (isolated, keeps system Python clean):
 
-3. Call endpoints:
-	- http://127.0.0.1:5050/health
-	- http://127.0.0.1:5050/cpu-temp
-	- http://127.0.0.1:5050/system-info
-	- http://127.0.0.1:5050/openapi.json
+```bash
+sudo apt-get update
+sudo apt-get install -y pipx
+pipx ensurepath
+cd "$(pwd)"  # repo root
+pipx install .
+```
+
+2) Start/stop on demand (no background when not in use):
+
+Quick transient unit (no files):
+```bash
+systemd-run --user --unit=pi-inspector --same-dir ~/.local/bin/inspector-raspi -p 5050
+# stop later
+systemctl --user stop pi-inspector.service
+```
+
+Optional helper scripts:
+```bash
+mkdir -p ~/.local/bin
+cat > ~/.local/bin/pi-inspector-start <<'EOF'
+#!/usr/bin/env bash
+exec systemd-run --user --unit=pi-inspector --same-dir "$HOME/.local/bin/inspector-raspi" -p 5050
+EOF
+chmod +x ~/.local/bin/pi-inspector-start
+
+cat > ~/.local/bin/pi-inspector-stop <<'EOF'
+#!/usr/bin/env bash
+exec systemctl --user stop pi-inspector.service
+EOF
+chmod +x ~/.local/bin/pi-inspector-stop
+
+# usage
+pi-inspector-start
+pi-inspector-stop
+```
+
+3) Call endpoints:
+
+```bash
+curl -s http://127.0.0.1:5050/health
+curl -s http://127.0.0.1:5050/cpu-temp
+curl -s http://127.0.0.1:5050/system-info | jq .
+curl -s http://127.0.0.1:5050/openapi.json | jq .
+```
+
+Alternative ways to run (if you don’t want pipx):
+- As a module: `python -m inspector_raspi -p 5050`
+- With a venv:
+	```bash
+	python3 -m venv .venv
+	source .venv/bin/activate
+	pip install -e .
+	inspector-raspi -p 5050
+	```
+
+MCP server (portable tools for other agents)
+--------------------------------------------
+The MCP server is a tiny stdio process that exposes the same tools and proxies them to the local HTTP API. It only runs when a client launches it and is otherwise idle—no background service needed.
+
+- Install (already included when you `pipx install .`): provides `inspector-raspi-mcp`.
+- Tools exposed: `pi.health`, `pi.cpuTemp`, `pi.systemInfo`, `pi.capabilities`.
+- Port selection: `--port 5050` or environment `INSPECTOR_PORT`/`PORT`.
+
+Run a quick smoke (manual):
+```bash
+# Launch and keep attached (it waits for MCP JSON-RPC messages on stdin)
+inspector-raspi-mcp --port 5050
+# Press Ctrl+C to exit
+```
+
+Example client configuration (Claude Desktop tool window or generic MCP client):
+```json
+{
+	"mcpServers": {
+		"pi-inspector": {
+			"command": "inspector-raspi-mcp",
+			"args": ["--port", "5050"],
+			"env": { "INSPECTOR_PORT": "5050" }
+		}
+	}
+}
+```
+
+Notes:
+- Ensure the HTTP API is running (see Usage above). The MCP server simply proxies to it.
+- Because MCP uses stdio, you do not need systemd for it; your client will spawn it on demand, keeping resource usage minimal.
 
 Configure
 ---------
@@ -43,6 +121,11 @@ VS Code Extension
 	- Pi Inspector: Health (`piInspector.health`)
 	- Pi Inspector: Capabilities (`piInspector.capabilities`)
 - Configuration: `piInspector.port` (defaults to 5050)
+
+Copilot Chat participant (@PiInspector)
+--------------------------------------
+- After installing the VSIX, you can type `@PiInspector` in Copilot Chat and ask: `capabilities`, `health`, `cpu temp`, or `system info`.
+- If it doesn’t appear, check the extension Output channel for a note about chat API availability.
 
 Install from VSIX
 -----------------

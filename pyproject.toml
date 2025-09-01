@@ -22,6 +22,7 @@ Homepage = "https://github.com/mcfuzzysquirrel/pi-inspector"
 
 [project.scripts]
 inspector-raspi = "inspector_raspi:main"
+inspector-raspi-mcp = "inspector_raspi.mcp_server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

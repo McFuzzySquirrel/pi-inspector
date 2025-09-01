@@ -27,8 +27,8 @@ Install from VSIX
 
 Use with GitHub Copilot
 -----------------------
-- Copilot Chat: Ask it to “call Pi Inspector health” or “fetch Pi capabilities” after activating the extension; results are printed to the Output channel and surfaced as tool responses where supported.
-- Copilot Agent Mode: The extension attempts to register tools (e.g., `pi.health`, `pi.systemInfo`) via the VS Code Language Model API when available. As an alternative, you can register the OpenAPI tool at `http://127.0.0.1:5050/openapi.json` so the agent can call `/system-info`, `/cpu-temp`, etc.
+- Copilot Chat (@ mention): Type `@PiInspector` in a Copilot Chat and ask things like “capabilities”, “health”, “cpu temp”, or “system info”. The participant queries the local API and returns JSON.
+- Copilot Chat tools: The extension attempts to register tools (e.g., `pi.health`, `pi.systemInfo`) via the VS Code Language Model API when available. As an alternative, you can register the OpenAPI tool at `http://127.0.0.1:5050/openapi.json` so the agent can call `/system-info`, `/cpu-temp`, etc.
 
 Configuration
 -------------
@@ -38,3 +38,4 @@ Notes
 -----
 - The API binds to loopback (127.0.0.1) by default for privacy. To allow remote access, override host/port explicitly and consider your network security.
 - If your VS Code build doesn’t expose the LM Tools API, the extension still works via its commands; you can also wire the OpenAPI spec directly into your Copilot Agent configuration.
+- The @ participant requires a VS Code build with chat participant APIs enabled. If it doesn’t appear, check the extension Output channel for “Chat API not available…”.
