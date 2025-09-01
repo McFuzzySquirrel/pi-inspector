@@ -99,6 +99,32 @@ Example client configuration (Claude Desktop tool window or generic MCP client):
 }
 ```
 
+Try it (roundtrip test):
+```bash
+# In one terminal: ensure the HTTP API is running locally
+inspector-raspi -p 5050
+
+# In another terminal: run the stdio roundtrip test
+python3 scripts/mcp_roundtrip.py --port 5050 --tool pi.systemInfo
+```
+
+VS Code user-level MCP config (Toolsets):
+Create `~/.config/Code/User/mcp.json` with:
+```json
+{
+	"servers": {
+		"pi-inspector": {
+			"type": "stdio",
+			"command": "/home/<user>/.local/bin/inspector-raspi-mcp",
+			"args": ["--port", "5050"],
+			"env": { "INSPECTOR_PORT": "5050" }
+		}
+	},
+	"inputs": []
+}
+```
+Then restart VS Code. The MCP server will be spawned on demand by Toolsets, keeping resource usage minimal.
+
 Notes:
 - Ensure the HTTP API is running (see Usage above). The MCP server simply proxies to it.
 - Because MCP uses stdio, you do not need systemd for it; your client will spawn it on demand, keeping resource usage minimal.
