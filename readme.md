@@ -140,6 +140,24 @@ Copilot Agent Mode
 - Use the VS Code extension to auto-register tools when supported by your VS Code/Copilot build (e.g., `pi.health`, `pi.systemInfo`).
 - Alternatively, register http://127.0.0.1:5050/openapi.json as a tool spec so the agent can call `/health`, `/cpu-temp`, `/system-info` directly.
 
+OpenAPI tool registration (generic agent example):
+```json
+{
+	"tools": [
+		{
+			"name": "pi-inspector",
+			"type": "openapi",
+			"openapi": { "url": "http://127.0.0.1:5050/openapi.json" },
+			"server": { "url": "http://127.0.0.1:5050" },
+			"auth": { "type": "none" }
+		}
+	]
+}
+```
+Notes:
+- Ensure the API is running locally and only bound to 127.0.0.1.
+- Many agent platforms accept an OpenAPI tool source; adapt the field names to your platform’s schema.
+
 VS Code Extension
 -----------------
 - Build/package in `extensions/pi-inspector` and install the `.vsix`.
