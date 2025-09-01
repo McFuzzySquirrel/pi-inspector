@@ -10,7 +10,7 @@ readme = "readme.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
-	{ name = "Your Name" }
+	{ name = "mcfuzzysquirrel" }
 ]
 dependencies = [
 	"flask",
@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your/repo"
+Homepage = "https://github.com/mcfuzzysquirrel/pi-inspector"
 
 [project.scripts]
 inspector-raspi = "inspector_raspi:main"

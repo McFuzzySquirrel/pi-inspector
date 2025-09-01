@@ -4,10 +4,11 @@
   "description": "Wires Copilot Agent Mode to a local Raspberry Pi inspector API.",
   "version": "0.0.1",
   "engines": { "vscode": ">=1.90.0" },
-  "publisher": "yourname",
+  "publisher": "mcfuzzysquirrel",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your/repo.git"
+    "url": "https://github.com/mcfuzzysquirrel/pi-inspector.git"
   },
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
@@ -40,6 +41,6 @@
     "@types/vscode": "^1.90.0",
     "esbuild": "^0.21.5",
     "typescript": "^5.6.2",
-    "@vscode/vsce": "^2.24.0"
+  "@vscode/vsce": "^3.6.0"
   }
 }

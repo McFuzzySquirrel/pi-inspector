@@ -1,7 +1,4 @@
 import * as vscode from 'vscode';
-import * as http from 'http';
-import * as https from 'https';
-import { URL } from 'url';
 
 export function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel('Pi Inspector');
@@ -11,45 +8,15 @@ export function activate(context: vscode.ExtensionContext) {
   async function fetchJson(path: string) {
     const url = `${baseUrl}${path}`;
     try {
-      if (typeof (globalThis as any).fetch === 'function') {
-        const resp = await (globalThis as any).fetch(url);
-        return await resp.json();
+      if (typeof (globalThis as any).fetch !== 'function') {
+        throw new Error('global fetch is not available');
       }
-      return await httpGetJson(url);
+      const resp = await (globalThis as any).fetch(url);
+      return await resp.json();
     } catch (e: any) {
       output.appendLine(`Error fetching ${path}: ${e?.message || e}`);
       return null;
     }
-  }
-
-  function httpGetJson(urlStr: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      try {
-        const u = new URL(urlStr);
-        const mod = u.protocol === 'https:' ? https : http;
-        const req = mod.request(
-          {
-            hostname: u.hostname,
-            port: u.port,
-            path: u.pathname + u.search,
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-          },
-          (res) => {
-            let data = '';
-            res.on('data', (chunk) => (data += chunk));
-            res.on('end', () => {
-              try { resolve(JSON.parse(data || '{}')); }
-              catch (err) { reject(err); }
-            });
-          }
-        );
-        req.on('error', reject);
-        req.end();
-      } catch (err) {
-        reject(err);
-      }
-    });
   }
 
   const cmdHealth = vscode.commands.registerCommand('piInspector.health', async () => {
@@ -82,7 +49,7 @@ function tryRegisterLmTools(context: vscode.ExtensionContext, baseUrl: string, o
   const register = (name: string, description: string, path: string, inputSchema: any = { type: 'object', properties: {}, additionalProperties: false }) => {
     try {
       const disposable = lm.registerTool({ name, description, inputSchema, tags: ['pi', 'raspberry-pi', 'local'] }, async (_input: any, _ctx: any, _tok: any) => {
-        const data = await fetchJsonPath(baseUrl, path);
+  const data = await fetchJsonPath(baseUrl, path);
         const text = JSON.stringify(data ?? {});
         // Prefer typed ToolResultPart if present
         const TextPart = (vscode as any).LanguageModelToolResultTextPart;
@@ -106,39 +73,9 @@ function tryRegisterLmTools(context: vscode.ExtensionContext, baseUrl: string, o
 
 async function fetchJsonPath(baseUrl: string, path: string) {
   const url = `${baseUrl}${path}`;
-  if (typeof (globalThis as any).fetch === 'function') {
-    const resp = await (globalThis as any).fetch(url);
-    return await resp.json();
+  if (typeof (globalThis as any).fetch !== 'function') {
+    throw new Error('global fetch is not available in this VS Code build');
   }
-  return await httpGetJson(url);
-}
-
-function httpGetJson(urlStr: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    try {
-      const u = new URL(urlStr);
-      const mod = u.protocol === 'https:' ? https : http;
-      const req = mod.request(
-        {
-          hostname: u.hostname,
-          port: u.port,
-          path: u.pathname + u.search,
-          method: 'GET',
-          headers: { 'Accept': 'application/json' },
-        },
-        (res) => {
-          let data = '';
-          res.on('data', (chunk) => (data += chunk));
-          res.on('end', () => {
-            try { resolve(JSON.parse(data || '{}')); }
-            catch (err) { reject(err); }
-          });
-        }
-      );
-      req.on('error', reject);
-      req.end();
-    } catch (err) {
-      reject(err);
-    }
-  });
+  const resp = await (globalThis as any).fetch(url);
+  return await resp.json();
 }
