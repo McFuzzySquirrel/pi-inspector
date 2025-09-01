@@ -3,6 +3,27 @@ Raspberry Pi Inspector
 
 If you’re looking to build applications that run on a Raspberry Pi, this can help. It’s a local-only API and a VS Code extension that let GitHub Copilot Chat and Agent Modes understand your Pi’s live environment so suggestions align with your actual hardware and OS.
 
+Quick start (TL;DR)
+-------------------
+1) Install (isolated):
+```bash
+pipx install .
+```
+
+2) Start on demand (minimal background time):
+```bash
+systemd-run --user --unit=pi-inspector --same-dir ~/.local/bin/inspector-raspi -p 5050
+```
+
+3) Verify locally:
+```bash
+curl -s http://127.0.0.1:5050/health
+```
+
+4) Use it:
+- VS Code: install the VSIX under `extensions/pi-inspector/`, then run “Pi Inspector: Health”.
+- MCP: run `python3 scripts/mcp_roundtrip.py --port 5050 --tool pi.systemInfo`.
+
 What’s inside
 -------------
 - A Flask API (loopback-only by default) exposing endpoints like `/health`, `/system-info`, `/cpu-temp`, and an OpenAPI spec.
