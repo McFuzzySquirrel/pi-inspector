@@ -1,0 +1,45 @@
+{
+  "name": "pi-inspector",
+  "displayName": "Pi Inspector",
+  "description": "Wires Copilot Agent Mode to a local Raspberry Pi inspector API.",
+  "version": "0.0.1",
+  "engines": { "vscode": ">=1.90.0" },
+  "publisher": "yourname",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your/repo.git"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "dist/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "piInspector.health", "title": "Pi Inspector: Health" },
+      { "command": "piInspector.capabilities", "title": "Pi Inspector: Capabilities" }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Pi Inspector",
+      "properties": {
+        "piInspector.port": {
+          "type": "number",
+          "default": 5050,
+          "description": "Local port of the Pi Inspector API"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --platform=node --format=cjs --external:vscode",
+    "watch": "npm run build -- --watch",
+    "typecheck": "tsc -p .",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.6.2",
+    "@vscode/vsce": "^2.24.0"
+  }
+}

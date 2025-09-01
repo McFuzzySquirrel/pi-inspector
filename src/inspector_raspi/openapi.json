@@ -1,0 +1,95 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Raspberry Pi Inspector API",
+    "version": "0.1.0",
+    "description": "Local-only API exposing Raspberry Pi environment details for Copilot Agent integrations."
+  },
+  "servers": [
+    { "url": "http://localhost:5050", "description": "Local" }
+  ],
+  "paths": {
+    
+    "/version": {
+      "get": {
+        "summary": "Get package and Python versions",
+        "responses": {
+          "200": {
+            "description": "Version info",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "name": {"type":"string"}, "version": {"type":["string","null"]}, "python": {"type":"string"} } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/capabilities": {
+      "get": {
+        "summary": "Detect available tools and device nodes",
+        "responses": {
+          "200": {
+            "description": "Capabilities flags",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "additionalProperties": {"type": ["boolean", "string", "number", "null"]} }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": { "description": "OK" }
+        }
+      }
+    },
+    "/cpu-temp": {
+      "get": {
+        "summary": "Get CPU temperature",
+        "responses": {
+          "200": {
+            "description": "Temperature in Celsius",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "cpu_temp_c": { "type": ["number", "null"] } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system-info": {
+      "get": {
+        "summary": "Get aggregated system information",
+        "responses": {
+          "200": {
+            "description": "System info payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cpu": { "type": "object" },
+                    "memory": { "type": "object" },
+                    "storage": { "type": "object" },
+                    "gpu": { "type": "object" },
+                    "os": { "type": "object" },
+                    "python": { "type": "object" },
+                    "network": { "type": "object" },
+                    "peripherals": { "type": "object" },
+                    "ml": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

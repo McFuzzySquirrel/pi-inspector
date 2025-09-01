@@ -1,0 +1,60 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Pi Inspector API",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"source .venv/bin/activate && python \"src/inspector_raspi/__main__.py\""
+			],
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Run Pi Inspector API (5051)",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"source .venv/bin/activate && PORT=5051 python \"src/inspector_raspi/__main__.py\""
+			],
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Install (editable)",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"source .venv/bin/activate && pip install -e ."
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Run inspector-raspi (local)",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"source .venv/bin/activate && PORT=5052 inspector-raspi"
+			],
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Run inspector-raspi (5053)",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"source .venv/bin/activate && PORT=5053 inspector-raspi"
+			],
+			"isBackground": true,
+			"group": "build"
+		}
+	]
+}
