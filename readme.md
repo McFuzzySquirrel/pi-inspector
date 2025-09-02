@@ -1,7 +1,8 @@
 Raspberry Pi Inspector
 ======================
+(Note: its still pretty rough around the edges)
 
-If you’re looking to build applications that run on a Raspberry Pi, this can help. It’s a local-only API and a VS Code extension that let GitHub Copilot Chat and Agent Modes understand your Pi’s live environment so suggestions align with your actual hardware and OS.
+If you’re looking to build applications that run on a Raspberry Pi, this can help. It’s a local-only API a VS Code extension and an MCP option that lets GitHub Copilot Chat and Agent Modes understand your Pi’s live environment so suggestions align with your actual hardware and OS.
 
 Quick start (TL;DR)
 -------------------
