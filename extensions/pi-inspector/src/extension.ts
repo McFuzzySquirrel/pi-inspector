@@ -61,7 +61,15 @@ export function activate(context: vscode.ExtensionContext) {
     try { output.show(true); } catch {}
   });
 
-  context.subscriptions.push(cmdHealth, cmdCapabilities, cmdRegisterTools, cmdShowOutput, output);
+  const cmdUsbList = vscode.commands.registerCommand('piInspector.usbList', async () => {
+    output.appendLine('[Pi Inspector] Command: USB List');
+    const data = await fetchJson('/system-info');
+    const list = (data && data.usb && Array.isArray(data.usb.lsusb)) ? data.usb.lsusb : [];
+    output.appendLine(`/system-info.usb.lsusb -> ${JSON.stringify(list)}`);
+    vscode.window.showInformationMessage(`Pi Inspector: USB devices found: ${list.length}`);
+  });
+
+  context.subscriptions.push(cmdHealth, cmdCapabilities, cmdRegisterTools, cmdShowOutput, cmdUsbList, output);
 
   // Register a Chat Participant so users can @Pi Inspector in Copilot Chat
   try {
@@ -154,6 +162,27 @@ function tryRegisterLmTools(context: vscode.ExtensionContext, baseUrl: string, o
   register('pi.cpuTemp', 'Get CPU temperature in Celsius', '/cpu-temp');
   register('pi.systemInfo', 'Get full system information summary', '/system-info');
   register('pi.capabilities', 'Get local capabilities/tools detected on the Pi', '/capabilities');
+
+  // Register a computed tool for USB list (extracted from /system-info)
+  try {
+    const lm: any = (vscode as any).lm;
+    if (lm && typeof lm.registerTool === 'function') {
+      const usbListDisposable = lm.registerTool({ name: 'pi.usbList', description: 'List USB devices (lsusb summary)', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, tags: ['pi', 'raspberry-pi', 'local'] }, async (_input: any, _ctx: any, _tok: any) => {
+        const sys = await fetchJsonPath(baseUrl, '/system-info');
+        const list = (sys && sys.usb && Array.isArray(sys.usb.lsusb)) ? sys.usb.lsusb : [];
+        const text = JSON.stringify(list ?? []);
+        const TextPart = (vscode as any).LanguageModelToolResultTextPart;
+        if (typeof TextPart === 'function') {
+          return { content: [new TextPart(text)] };
+        }
+        return { content: [{ type: 'text', text }] };
+      });
+      context.subscriptions.push(usbListDisposable);
+      output.appendLine('[Pi Inspector] Registered LM tool: pi.usbList');
+    }
+  } catch (e: any) {
+    output.appendLine(`[Pi Inspector] Failed to register LM tool pi.usbList: ${e?.message || e}`);
+  }
 }
 
 async function fetchJsonPath(baseUrl: string, path: string) {

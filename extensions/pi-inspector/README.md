@@ -17,6 +17,7 @@ Quick start
 3. Use the commands (Command Palette):
    - Pi Inspector: Health (`piInspector.health`)
    - Pi Inspector: Capabilities (`piInspector.capabilities`)
+   - Pi Inspector: USB List (`piInspector.usbList`) – shows `lsusb` summary in the Output channel
 
 Install from VSIX
 -----------------

@@ -18,7 +18,8 @@
       { "command": "piInspector.health", "title": "Pi Inspector: Health" },
   { "command": "piInspector.capabilities", "title": "Pi Inspector: Capabilities" },
   { "command": "piInspector.registerTools", "title": "Pi Inspector: Register LM Tools" },
-  { "command": "piInspector.showOutput", "title": "Pi Inspector: Show Output" }
+  { "command": "piInspector.showOutput", "title": "Pi Inspector: Show Output" },
+  { "command": "piInspector.usbList", "title": "Pi Inspector: USB List" }
     ],
     "chatParticipants": [
       {
