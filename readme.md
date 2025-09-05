@@ -30,6 +30,18 @@ What’s inside
 - A Flask API (loopback-only by default) exposing endpoints like `/health`, `/system-info`, `/cpu-temp`, and an OpenAPI spec.
 - A VS Code extension that calls the API and optionally registers tools for Copilot Agent Mode.
 - A minimal MCP (Model Context Protocol) server (stdio) that proxies to the API so non-Copilot agents can use the same tools.
+- Agent usage guide: see `docs/copilot-instructions.md` for model-facing guidance and examples.
+
+MCP-first track
+---------------
+We maintain an "MCP-first" branch focused on making MCP the default integration for local Pi development:
+
+- Branch: `feature/mcp-first`
+- Proposal and roadmap: `docs/mcp-first-proposal.md`
+- To try it locally:
+	```bash
+	git switch feature/mcp-first
+	```
 
 Usage
 -----

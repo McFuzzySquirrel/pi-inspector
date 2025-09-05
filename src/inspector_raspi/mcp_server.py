@@ -8,6 +8,8 @@ Tools exposed:
 - pi.cpuTemp -> GET /cpu-temp
 - pi.systemInfo -> GET /system-info
 - pi.capabilities -> GET /capabilities
+- pi.gpuInfo -> extract GPU-related fields from /system-info
+- pi.cameraInfo -> summarize camera/video info from /system-info and /capabilities
 
 Note: MCP servers are typically launched on-demand by the client over stdio;
 this process is intentionally lightweight and idle when not in use.
@@ -21,7 +23,7 @@ import os
 import sys
 import time
 import urllib.request
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 
 JSON = Dict[str, Any]
@@ -134,6 +136,17 @@ class StdioJsonRpc:
 class McpHandler:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
+        self._cache: Dict[str, Tuple[float, Any]] = {}
+
+    def _http_json_cached(self, path: str, ttl: float = 3.0) -> Any:
+        url = f"{self.base_url}{path}"
+        now = time.time()
+        hit = self._cache.get(url)
+        if hit and (now - hit[0]) <= ttl:
+            return hit[1]
+        data = _http_json(url)
+        self._cache[url] = (now, data)
+        return data
 
     def on_initialize(self, params: JSON) -> JSON:
         return {
@@ -153,6 +166,8 @@ class McpHandler:
                 {"name": "pi.cpuTemp", "description": "Get CPU temperature (C)", "inputSchema": empty_obj},
                 {"name": "pi.systemInfo", "description": "Get full system information", "inputSchema": empty_obj},
                 {"name": "pi.capabilities", "description": "Get detected capabilities", "inputSchema": empty_obj},
+                {"name": "pi.gpuInfo", "description": "GPU details extracted from system info", "inputSchema": empty_obj},
+                {"name": "pi.cameraInfo", "description": "Camera/video device summary from system info and capabilities", "inputSchema": empty_obj},
             ]
         }
 
@@ -161,20 +176,30 @@ class McpHandler:
         if not isinstance(name, str):
             raise ValueError("Invalid tool name")
 
-        path = None
-        if name == "pi.health":
-            path = "/health"
-        elif name == "pi.cpuTemp":
-            path = "/cpu-temp"
-        elif name == "pi.systemInfo":
-            path = "/system-info"
-        elif name == "pi.capabilities":
-            path = "/capabilities"
+        if name in {"pi.health", "pi.cpuTemp", "pi.systemInfo", "pi.capabilities"}:
+            path = {
+                "pi.health": "/health",
+                "pi.cpuTemp": "/cpu-temp",
+                "pi.systemInfo": "/system-info",
+                "pi.capabilities": "/capabilities",
+            }[name]
+            data = self._http_json_cached(path)
+        elif name == "pi.gpuInfo":
+            sysinfo = self._http_json_cached("/system-info")
+            data = sysinfo.get("gpu", {}) if isinstance(sysinfo, dict) else {}
+        elif name == "pi.cameraInfo":
+            sysinfo = self._http_json_cached("/system-info")
+            caps = self._http_json_cached("/capabilities")
+            peripherals = sysinfo.get("peripherals", {}) if isinstance(sysinfo, dict) else {}
+            data = {
+                "video_devices": peripherals.get("video_devices", []),
+                "camera_status": peripherals.get("camera"),
+                "v4l2_ctl": bool(caps.get("v4l2_ctl", False)) if isinstance(caps, dict) else False,
+                "libcamera": bool(caps.get("libcamera", False)) if isinstance(caps, dict) else False,
+            }
         else:
             raise ValueError(f"Unknown tool: {name}")
 
-        data = _http_json(f"{self.base_url}{path}")
-        # Return as text content (most MCP clients can render JSON text)
         content = [{"type": "text", "text": json.dumps(data, ensure_ascii=False)}]
         return {"content": content}
 
