@@ -5,12 +5,12 @@ Minimal MCP client roundtrip tester for inspector-raspi-mcp.
 This launches the MCP server (module or console) over stdio, sends:
   - initialize
   - tools/list
-  - tools/call (default: pi.health)
+    - tools/call (default: pi-health)
   - shutdown
 and prints the responses.
 
 Usage:
-  python3 scripts/mcp_roundtrip.py --port 5050 --tool pi.health
+    python3 scripts/mcp_roundtrip.py --port 5050 --tool pi-health
 
 Notes:
   - Ensure the HTTP API is running on 127.0.0.1:<port> beforehand.
@@ -69,8 +69,8 @@ def _recv_until_id(proc: subprocess.Popen, target_id: int, max_scans: int = 8) -
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="MCP roundtrip tester for inspector-raspi")
     ap.add_argument("--port", type=int, default=int(os.getenv("INSPECTOR_PORT", os.getenv("PORT", 5050))), help="Local inspector API port")
-    ap.add_argument("--tool", type=str, default="pi.health", help="Tool to call: pi.health | pi.cpuTemp | pi.systemInfo | pi.capabilities | pi.usbList | pi.usbWatch")
-    ap.add_argument("--args", type=str, default="{}", help='JSON object of tool arguments, e.g., {"reset":true} for pi.usbWatch')
+    ap.add_argument("--tool", type=str, default="pi-health", help="Tool to call: pi-health | pi-cpu-temp | pi-system-info | pi-capabilities | pi-usb-list | pi-usb-watch | pi-gpu-info | pi-camera-info")
+    ap.add_argument("--args", type=str, default="{}", help='JSON object of tool arguments, e.g., {"reset":true} for pi-usb-watch')
     ap.add_argument("--repeat", type=int, default=1, help="Call the tool N times (useful for watch tools).")
     ap.add_argument("--sleep", type=float, default=1.0, help="Seconds to sleep between repeated tool calls.")
     ap.add_argument("--launch", choices=["module", "command"], default="command", help="How to launch server: console command (default) or Python module")

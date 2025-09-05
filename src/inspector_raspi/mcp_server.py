@@ -3,13 +3,13 @@ Minimal MCP (Model Context Protocol) server over stdio that proxies tools to the
 local Raspberry Pi Inspector HTTP API. Implements a tiny subset of MCP using
 JSON-RPC 2.0 framed with Content-Length headers (LSP-style framing).
 
-Tools exposed:
-- pi.health -> GET /health
-- pi.cpuTemp -> GET /cpu-temp
-- pi.systemInfo -> GET /system-info
-- pi.capabilities -> GET /capabilities
-- pi.gpuInfo -> extract GPU-related fields from /system-info
-- pi.cameraInfo -> summarize camera/video info from /system-info and /capabilities
+Tools exposed (hyphen-case names to satisfy client validation):
+- pi-health -> GET /health
+- pi-cpu-temp -> GET /cpu-temp
+- pi-system-info -> GET /system-info
+- pi-capabilities -> GET /capabilities
+- pi-gpu-info -> extract GPU-related fields from /system-info
+- pi-camera-info -> summarize camera/video info from /system-info and /capabilities
 
 Note: MCP servers are typically launched on-demand by the client over stdio;
 this process is intentionally lightweight and idle when not in use.
@@ -31,6 +31,15 @@ JSON = Dict[str, Any]
 
 def _now_ms() -> int:
     return int(time.time() * 1000)
+
+# --- internal debug helper (stderr only; safe for stdio protocol) ---
+def _dbg(msg: str) -> None:
+    try:
+        if os.getenv("MCP_DEBUG"):
+            sys.stderr.write(f"[mcp-debug] {time.strftime('%H:%M:%S')} {msg}\n")
+            sys.stderr.flush()
+    except Exception:
+        pass
 
 
 class StdioJsonRpc:
@@ -172,6 +181,7 @@ class StdioJsonRpc:
             mid = msg.get("id")
             method = msg.get("method")
             params = msg.get("params", {})
+            _dbg(f"recv method={method} id={mid}")
             try:
                 if method == "initialize":
                     res = handler.on_initialize(params)
@@ -197,6 +207,18 @@ class McpHandler:
         self._cache = {}
         # Session-scoped previous snapshots for simple watch-style tools
         self._usb_prev = None
+
+        # Map legacy dotted/camelCase names to hyphen-case
+        self._alias_map = {
+            "pi.health": "pi-health",
+            "pi.cpuTemp": "pi-cpu-temp",
+            "pi.systemInfo": "pi-system-info",
+            "pi.capabilities": "pi-capabilities",
+            "pi.gpuInfo": "pi-gpu-info",
+            "pi.cameraInfo": "pi-camera-info",
+            "pi.usbList": "pi-usb-list",
+            "pi.usbWatch": "pi-usb-watch",
+        }
 
     def _http_json_cached(self, path: str, ttl: float = 3.0) -> Any:
         url = f"{self.base_url}{path}"
@@ -229,14 +251,14 @@ class McpHandler:
         }
         return {
             "tools": [
-                {"name": "pi.health", "description": "Get inspector health", "inputSchema": empty_obj},
-                {"name": "pi.cpuTemp", "description": "Get CPU temperature (C)", "inputSchema": empty_obj},
-                {"name": "pi.systemInfo", "description": "Get full system information", "inputSchema": empty_obj},
-                {"name": "pi.capabilities", "description": "Get detected capabilities", "inputSchema": empty_obj},
-                {"name": "pi.gpuInfo", "description": "GPU details extracted from system info", "inputSchema": empty_obj},
-                {"name": "pi.cameraInfo", "description": "Camera/video device summary from system info and capabilities", "inputSchema": empty_obj},
-                {"name": "pi.usbList", "description": "List USB devices (lsusb summary)", "inputSchema": empty_obj},
-                {"name": "pi.usbWatch", "description": "Watch USB devices; returns current list plus added/removed since last call", "inputSchema": usb_watch_schema},
+                {"name": "pi-health", "description": "Get inspector health", "inputSchema": empty_obj},
+                {"name": "pi-cpu-temp", "description": "Get CPU temperature (C)", "inputSchema": empty_obj},
+                {"name": "pi-system-info", "description": "Get full system information", "inputSchema": empty_obj},
+                {"name": "pi-capabilities", "description": "Get detected capabilities", "inputSchema": empty_obj},
+                {"name": "pi-gpu-info", "description": "GPU details extracted from system info", "inputSchema": empty_obj},
+                {"name": "pi-camera-info", "description": "Camera/video device summary from system info and capabilities", "inputSchema": empty_obj},
+                {"name": "pi-usb-list", "description": "List USB devices (lsusb summary)", "inputSchema": empty_obj},
+                {"name": "pi-usb-watch", "description": "Watch USB devices; returns current list plus added/removed since last call", "inputSchema": usb_watch_schema},
             ]
         }
 
@@ -244,19 +266,22 @@ class McpHandler:
         name = params.get("name")
         if not isinstance(name, str):
             raise ValueError("Invalid tool name")
+        # Normalize legacy names
+        name_norm = self._alias_map.get(name, name)
+        _dbg(f"tools/call name={name} -> {name_norm}")
 
-        if name in {"pi.health", "pi.cpuTemp", "pi.systemInfo", "pi.capabilities"}:
+        if name_norm in {"pi-health", "pi-cpu-temp", "pi-system-info", "pi-capabilities"}:
             path = {
-                "pi.health": "/health",
-                "pi.cpuTemp": "/cpu-temp",
-                "pi.systemInfo": "/system-info",
-                "pi.capabilities": "/capabilities",
-            }[name]
+                "pi-health": "/health",
+                "pi-cpu-temp": "/cpu-temp",
+                "pi-system-info": "/system-info",
+                "pi-capabilities": "/capabilities",
+            }[name_norm]
             data = self._http_json_cached(path)
-        elif name == "pi.gpuInfo":
+        elif name_norm == "pi-gpu-info":
             sysinfo = self._http_json_cached("/system-info")
             data = sysinfo.get("gpu", {}) if isinstance(sysinfo, dict) else {}
-        elif name == "pi.cameraInfo":
+        elif name_norm == "pi-camera-info":
             sysinfo = self._http_json_cached("/system-info")
             caps = self._http_json_cached("/capabilities")
             peripherals = sysinfo.get("peripherals", {}) if isinstance(sysinfo, dict) else {}
@@ -266,11 +291,11 @@ class McpHandler:
                 "v4l2_ctl": bool(caps.get("v4l2_ctl", False)) if isinstance(caps, dict) else False,
                 "libcamera": bool(caps.get("libcamera", False)) if isinstance(caps, dict) else False,
             }
-        elif name == "pi.usbList":
+        elif name_norm == "pi-usb-list":
             sysinfo = self._http_json_cached("/system-info")
             usb = sysinfo.get("usb", {}) if isinstance(sysinfo, dict) else {}
             data = usb.get("lsusb", []) if isinstance(usb, dict) else []
-        elif name == "pi.usbWatch":
+        elif name_norm == "pi-usb-watch":
             # Optional args: { reset?: bool }
             args = params.get("arguments") or {}
             reset = bool(args.get("reset", False)) if isinstance(args, dict) else False

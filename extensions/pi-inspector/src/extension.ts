@@ -181,16 +181,16 @@ function tryRegisterLmTools(context: vscode.ExtensionContext, baseUrl: string, o
     }
   };
 
-  register('pi.health', 'Get local Raspberry Pi inspector health', '/health');
-  register('pi.cpuTemp', 'Get CPU temperature in Celsius', '/cpu-temp');
-  register('pi.systemInfo', 'Get full system information summary', '/system-info');
-  register('pi.capabilities', 'Get local capabilities/tools detected on the Pi', '/capabilities');
+  register('pi-health', 'Get local Raspberry Pi inspector health', '/health');
+  register('pi-cpu-temp', 'Get CPU temperature in Celsius', '/cpu-temp');
+  register('pi-system-info', 'Get full system information summary', '/system-info');
+  register('pi-capabilities', 'Get local capabilities/tools detected on the Pi', '/capabilities');
 
   // Register a computed tool for USB list (extracted from /system-info)
   try {
     const lm: any = (vscode as any).lm;
     if (lm && typeof lm.registerTool === 'function') {
-      const usbListDisposable = lm.registerTool({ name: 'pi.usbList', description: 'List USB devices (lsusb summary)', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, tags: ['pi', 'raspberry-pi', 'local'] }, async (_input: any, _ctx: any, _tok: any) => {
+  const usbListDisposable = lm.registerTool({ name: 'pi-usb-list', description: 'List USB devices (lsusb summary)', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, tags: ['pi', 'raspberry-pi', 'local'] }, async (_input: any, _ctx: any, _tok: any) => {
         const sys = await fetchJsonPath(baseUrl, '/system-info');
         const list = (sys && sys.usb && Array.isArray(sys.usb.lsusb)) ? sys.usb.lsusb : [];
         const text = JSON.stringify(list ?? []);
@@ -201,7 +201,7 @@ function tryRegisterLmTools(context: vscode.ExtensionContext, baseUrl: string, o
         return { content: [{ type: 'text', text }] };
       });
       context.subscriptions.push(usbListDisposable);
-      output.appendLine('[Pi Inspector] Registered LM tool: pi.usbList');
+  output.appendLine('[Pi Inspector] Registered LM tool: pi-usb-list');
     }
   } catch (e: any) {
     output.appendLine(`[Pi Inspector] Failed to register LM tool pi.usbList: ${e?.message || e}`);
@@ -209,7 +209,7 @@ function tryRegisterLmTools(context: vscode.ExtensionContext, baseUrl: string, o
 
   // Informative note in Output about MCP-only extras
   try {
-    output.appendLine('[Pi Inspector] Tip: Additional tools available via MCP stdio server (inspector-raspi-mcp): pi.gpuInfo, pi.cameraInfo, pi.usbWatch (session diffs).');
+  output.appendLine('[Pi Inspector] Tip: Additional tools available via MCP stdio server (inspector-raspi-mcp): pi-gpu-info, pi-camera-info, pi-usb-watch (session diffs).');
   } catch {}
 }
 

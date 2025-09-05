@@ -35,12 +35,12 @@ Tools and how to call them
   - GET /capabilities → { ...booleans }
   - GET /system-info → rich system JSON
 - MCP tools (stdio server inspector-raspi-mcp):
-  - pi.health, pi.cpuTemp, pi.systemInfo, pi.capabilities, pi.gpuInfo, pi.cameraInfo, pi.usbList, pi.usbWatch
-  - usbWatch returns { devices[], added[], removed[], changed, count, timestamp, ttl_hint_seconds }
+  - pi-health, pi-cpu-temp, pi-system-info, pi-capabilities, pi-gpu-info, pi-camera-info, pi-usb-list, pi-usb-watch
+  - pi-usb-watch returns { devices[], added[], removed[], changed, count, timestamp, ttl_hint_seconds }
 
 Response pattern for the agent
 ------------------------------
-1) Call pi.capabilities (or /capabilities) and, if needed, pi.systemInfo for details.
+1) Call pi-capabilities (or /capabilities) and, if needed, pi-system-info for details.
 2) Summarize relevant facts in 1–2 bullets.
 3) Provide the minimal, local-first solution (short steps or code). Avoid external deps unless requested.
 4) Offer optional next steps (e.g., install a package) clearly marked.

@@ -178,7 +178,7 @@ MCP server (portable tools for other agents)
 The MCP server is a tiny stdio process that exposes the same tools and proxies them to the local HTTP API. It only runs when a client launches it and is otherwise idle—no background service needed.
 
 - Install (already included when you `pipx install .`): provides `inspector-raspi-mcp` and `inspector-raspi-mcp-all`.
-- Tools exposed: `pi.health`, `pi.cpuTemp`, `pi.systemInfo`, `pi.capabilities`, `pi.gpuInfo`, `pi.cameraInfo`, `pi.usbList`, `pi.usbWatch`.
+- Tools exposed: `pi-health`, `pi-cpu-temp`, `pi-system-info`, `pi-capabilities`, `pi-gpu-info`, `pi-camera-info`, `pi-usb-list`, `pi-usb-watch`.
 - Port selection: `--port 5051` (workspace default) or environment `INSPECTOR_PORT`/`PORT`.
 
 Run a quick smoke (manual):
@@ -214,9 +214,9 @@ Try it (roundtrip test):
 inspector-raspi -p 5051 --quiet
 
 # In another terminal: run stdio roundtrip tests
-python3 scripts/mcp_roundtrip.py --port 5051 --tool pi.systemInfo
-python3 scripts/mcp_roundtrip.py --port 5051 --tool pi.usbList
-python3 scripts/mcp_roundtrip.py --port 5051 --tool pi.usbWatch --args '{"reset": true}' --repeat 2 --sleep 0.5
+python3 scripts/mcp_roundtrip.py --port 5051 --tool pi-system-info
+python3 scripts/mcp_roundtrip.py --port 5051 --tool pi-usb-list
+python3 scripts/mcp_roundtrip.py --port 5051 --tool pi-usb-watch --args '{"reset": true}' --repeat 2 --sleep 0.5
 ```
 
 VS Code user-level MCP config (Toolsets):
