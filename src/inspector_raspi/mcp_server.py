@@ -34,59 +34,117 @@ def _now_ms() -> int:
 
 
 class StdioJsonRpc:
+    """
+    Minimal JSON-RPC over stdio supporting two wire formats:
+    - LSP-style framing with Content-Length headers.
+    - JSON Lines (one JSON object per line).
+
+    The server auto-detects the format from the first inbound message and will
+    reply using the same format. To avoid confusing JSONL clients, no unsolicited
+    messages are sent before the first inbound request is read.
+    """
+
     def __init__(self, inp: io.BufferedReader, out: io.BufferedWriter) -> None:
         self._in = inp
         self._out = out
+        self._mode: Optional[str] = None  # 'lsp' or 'jsonl'
 
-    def _read_headers(self) -> Optional[Dict[str, str]]:
+    def _read_lsp_headers_after_first(self, first_line: bytes) -> Optional[Dict[str, str]]:
+        """Read LSP-style headers given we've already consumed the first header line."""
         headers: Dict[str, str] = {}
-        line_parts: list[bytes] = []
+        # Parse first line
+        try:
+            s = first_line.decode("utf-8").strip()
+            k, v = s.split(":", 1)
+            headers[k.strip().lower()] = v.strip()
+        except Exception:
+            return None
+        # Read remaining header lines
+        line_count = 1
         while True:
             line = self._in.readline()
             if not line:
                 return None
             if line in (b"\r\n", b"\n"):
                 break
-            line_parts.append(line)
-            if len(line_parts) > 64:  # guard against header abuse
+            line_count += 1
+            if line_count > 64:
                 raise RuntimeError("Too many header lines")
-        for raw in line_parts:
             try:
-                s = raw.decode("utf-8").strip()
+                s = line.decode("utf-8").strip()
                 if not s:
                     continue
                 k, v = s.split(":", 1)
                 headers[k.strip().lower()] = v.strip()
             except Exception:
+                # Skip unparseable header lines
                 continue
         return headers
 
     def _read_message(self) -> Optional[JSON]:
-        headers = self._read_headers()
-        if headers is None:
+        # Auto-detect mode on first message by peeking the first non-empty line
+        first = self._in.readline()
+        if not first:
             return None
-        length_s = headers.get("content-length")
-        if not length_s:
-            return None
+        # Skip stray newlines
+        while first in (b"\r\n", b"\n"):
+            first = self._in.readline()
+            if not first:
+                return None
+
+        lower = first.lower()
+        if self._mode is None:
+            if lower.startswith(b"content-length:"):
+                self._mode = "lsp"
+            elif first.lstrip().startswith((b"{", b"[")):
+                self._mode = "jsonl"
+            else:
+                # Unknown leading line; try to continue reading until blank line (noise) then recurse
+                # This avoids locking up if some wrapper writes banners.
+                # Drain to next blank line
+                while True:
+                    line = self._in.readline()
+                    if not line or line in (b"\r\n", b"\n"):
+                        break
+                return self._read_message()
+
+        if self._mode == "lsp":
+            headers = self._read_lsp_headers_after_first(first)
+            if headers is None:
+                return None
+            length_s = headers.get("content-length")
+            if not length_s:
+                return None
+            try:
+                length = int(length_s)
+            except ValueError:
+                return None
+            if length < 0 or length > 10_000_000:
+                raise RuntimeError("Invalid Content-Length")
+            body = self._in.read(length)
+            if not body:
+                return None
+            try:
+                return json.loads(body.decode("utf-8"))
+            except Exception:
+                return None
+
+        # JSON Lines
         try:
-            length = int(length_s)
-        except ValueError:
-            return None
-        if length < 0 or length > 1_000_000:
-            raise RuntimeError("Invalid Content-Length")
-        body = self._in.read(length)
-        if not body:
-            return None
-        try:
-            return json.loads(body.decode("utf-8"))
+            obj = json.loads(first.decode("utf-8").strip())
+            return obj
         except Exception:
             return None
 
     def _send(self, payload: JSON) -> None:
         data = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-        header = f"Content-Length: {len(data)}\r\n\r\n".encode("ascii")
-        self._out.write(header)
-        self._out.write(data)
+        mode = self._mode or "lsp"  # default to LSP if not yet known (but we avoid sending pre-request)
+        if mode == "jsonl":
+            self._out.write(data + b"\n")
+        else:
+            header = f"Content-Length: {len(data)}\r\n\r\n".encode("ascii")
+            self._out.write(header)
+            self._out.write(data)
         self._out.flush()
 
     def send_result(self, id_val: Any, result: Any) -> None:
@@ -105,8 +163,8 @@ class StdioJsonRpc:
         self._send(msg)
 
     def serve(self, handler: "McpHandler") -> None:
-        # Minimal handshake notification
-        self.send_notification("$/serverStarted", {"ts": _now_ms()})
+    # Do not send unsolicited notifications before the client sends the first
+    # message; some clients use JSON Lines and will treat header lines as parse errors.
         while True:
             msg = self._read_message()
             if msg is None:

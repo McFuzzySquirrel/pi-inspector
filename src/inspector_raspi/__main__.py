@@ -262,7 +262,8 @@ def get_system_info():
         "opencv": run_cmd("python3 -c 'import cv2,sys;print(cv2.__version__)'"),
         "tensorflow": run_cmd("python3 -c 'import tensorflow as tf,sys;print(tf.__version__)'"),
         "openvino": run_cmd("python3 -c 'import openvino as ov,sys;print(ov.__version__)'"),
-        "coral_tpu": run_cmd("lsusb | grep -i 'Global Unichip\|Movidius\|Google'"),  # Coral/Myriad
+        # Detect Coral/Myriad/Google USB accelerators
+        "coral_tpu": run_cmd("lsusb | grep -Ei 'Global Unichip|Movidius|Google'"),
     }
 
     # Board & power
@@ -343,6 +344,7 @@ def main():
     # CLI takes precedence over env; default 5050
     parser = argparse.ArgumentParser(prog="inspector-raspi", description="Local Raspberry Pi environment inspector API")
     parser.add_argument("-p", "--port", type=int, help="Port to listen on (default from env or 5050)")
+    parser.add_argument("-q", "--quiet", action="store_true", help="Reduce startup/log output (silent stdout; suppress Werkzeug logs)")
     args = parser.parse_args()
 
     try:
@@ -352,7 +354,15 @@ def main():
     except Exception:
         port = args.port or 5050
 
-    print(f"Starting Raspberry Pi Inspector on http://{host}:{port}/system-info")
+    if not args.quiet:
+        print(f"Starting Raspberry Pi Inspector on http://{host}:{port}/system-info")
+    # Suppress Werkzeug logs if quiet
+    if args.quiet:
+        try:
+            import logging
+            logging.getLogger('werkzeug').setLevel(logging.ERROR)
+        except Exception:
+            pass
     app.run(host=host, port=port)
 
 

@@ -7,10 +7,11 @@
 			"command": "bash",
 			"args": [
 				"-lc",
-				"source .venv/bin/activate && python \"src/inspector_raspi/__main__.py\""
+				"source .venv/bin/activate && python \"src/inspector_raspi/__main__.py\" --quiet"
 			],
 			"isBackground": true,
-			"group": "build"
+			"group": "build",
+			"presentation": { "reveal": "never", "panel": "dedicated", "clear": false }
 		},
 		{
 			"label": "Run Pi Inspector API (5051)",
@@ -18,10 +19,11 @@
 			"command": "bash",
 			"args": [
 				"-lc",
-				"source .venv/bin/activate && PORT=5051 python \"src/inspector_raspi/__main__.py\""
+				"source .venv/bin/activate && PORT=5051 python \"src/inspector_raspi/__main__.py\" --quiet"
 			],
 			"isBackground": true,
-			"group": "build"
+			"group": "build",
+			"presentation": { "reveal": "never", "panel": "dedicated", "clear": false }
 		},
 		{
 			"label": "Install (editable)",
@@ -40,10 +42,11 @@
 			"command": "bash",
 			"args": [
 				"-lc",
-				"source .venv/bin/activate && PORT=5052 inspector-raspi"
+				"source .venv/bin/activate && PORT=5052 inspector-raspi --quiet"
 			],
 			"isBackground": true,
-			"group": "build"
+			"group": "build",
+			"presentation": { "reveal": "never", "panel": "dedicated", "clear": false }
 		},
 		{
 			"label": "Run inspector-raspi (5053)",
@@ -51,10 +54,11 @@
 			"command": "bash",
 			"args": [
 				"-lc",
-				"source .venv/bin/activate && PORT=5053 inspector-raspi"
+				"source .venv/bin/activate && PORT=5053 inspector-raspi --quiet"
 			],
 			"isBackground": true,
-			"group": "build"
+			"group": "build",
+			"presentation": { "reveal": "never", "panel": "dedicated", "clear": false }
 		}
 	]
 }
