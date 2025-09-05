@@ -279,10 +279,10 @@ class McpHandler:
             }[name_norm]
             data = self._http_json_cached(path)
         elif name_norm == "pi-gpu-info":
-            sysinfo = self._http_json_cached("/system-info")
+            sysinfo = self._http_json_cached("/system-info-fast")
             data = sysinfo.get("gpu", {}) if isinstance(sysinfo, dict) else {}
         elif name_norm == "pi-camera-info":
-            sysinfo = self._http_json_cached("/system-info")
+            sysinfo = self._http_json_cached("/system-info-fast")
             caps = self._http_json_cached("/capabilities")
             peripherals = sysinfo.get("peripherals", {}) if isinstance(sysinfo, dict) else {}
             data = {
@@ -292,7 +292,7 @@ class McpHandler:
                 "libcamera": bool(caps.get("libcamera", False)) if isinstance(caps, dict) else False,
             }
         elif name_norm == "pi-usb-list":
-            sysinfo = self._http_json_cached("/system-info")
+            sysinfo = self._http_json_cached("/system-info-fast")
             usb = sysinfo.get("usb", {}) if isinstance(sysinfo, dict) else {}
             data = usb.get("lsusb", []) if isinstance(usb, dict) else []
         elif name_norm == "pi-usb-watch":
@@ -300,7 +300,7 @@ class McpHandler:
             args = params.get("arguments") or {}
             reset = bool(args.get("reset", False)) if isinstance(args, dict) else False
 
-            sysinfo = self._http_json_cached("/system-info")
+            sysinfo = self._http_json_cached("/system-info-fast")
             usb = sysinfo.get("usb", {}) if isinstance(sysinfo, dict) else {}
             now_list = usb.get("lsusb", []) if isinstance(usb, dict) else []
             now_set = set([str(x) for x in now_list])

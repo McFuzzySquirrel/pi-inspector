@@ -4,7 +4,7 @@ import subprocess
 import json
 from pathlib import Path
 from typing import Optional
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import argparse
 
 app = Flask(__name__)
@@ -176,7 +176,7 @@ def _capabilities() -> dict:
     }
     return caps
 
-def get_system_info():
+def get_system_info(fast: bool = False):
     # CPU & memory
     cpu_info = {
         "model": run_cmd("cat /proc/cpuinfo | grep 'Model' | head -1"),
@@ -229,11 +229,18 @@ def get_system_info():
             })
 
     # Python & packages
-    pip_list = run_cmd("pip3 list --format=freeze")
-    python_info = {
-        "version": platform.python_version(),
-        "packages": pip_list.splitlines()[:200] if pip_list else [],  # cap to avoid huge payloads
-    }
+    if fast:
+        python_info = {
+            "version": platform.python_version(),
+            "packages": [],
+            "packages_truncated": True,
+        }
+    else:
+        pip_list = run_cmd("pip3 list --format=freeze")
+        python_info = {
+            "version": platform.python_version(),
+            "packages": pip_list.splitlines()[:200] if pip_list else [],  # cap to avoid huge payloads
+        }
 
     # Networking
     network_info = {
@@ -255,16 +262,19 @@ def get_system_info():
     }
 
     # AI/ML
-    ml_info = {
-        "tflite": run_cmd("pip3 show tflite-runtime"),
-        "onnxruntime": run_cmd("pip3 show onnxruntime"),
-        "torch": run_cmd("python3 -c 'import torch,sys;print(torch.__version__)'"),
-        "opencv": run_cmd("python3 -c 'import cv2,sys;print(cv2.__version__)'"),
-        "tensorflow": run_cmd("python3 -c 'import tensorflow as tf,sys;print(tf.__version__)'"),
-        "openvino": run_cmd("python3 -c 'import openvino as ov,sys;print(ov.__version__)'"),
-        # Detect Coral/Myriad/Google USB accelerators
-        "coral_tpu": run_cmd("lsusb | grep -Ei 'Global Unichip|Movidius|Google'"),
-    }
+    if fast:
+        ml_info = {"skipped": True}
+    else:
+        ml_info = {
+            "tflite": run_cmd("pip3 show tflite-runtime"),
+            "onnxruntime": run_cmd("pip3 show onnxruntime"),
+            "torch": run_cmd("python3 -c 'import torch,sys;print(torch.__version__)'"),
+            "opencv": run_cmd("python3 -c 'import cv2,sys;print(cv2.__version__)'"),
+            "tensorflow": run_cmd("python3 -c 'import tensorflow as tf,sys;print(tf.__version__)'"),
+            "openvino": run_cmd("python3 -c 'import openvino as ov,sys;print(ov.__version__)'"),
+            # Detect Coral/Myriad/Google USB accelerators
+            "coral_tpu": run_cmd("lsusb | grep -Ei 'Global Unichip|Movidius|Google'"),
+        }
 
     # Board & power
     board_info = {
@@ -288,7 +298,12 @@ def get_system_info():
 
 @app.route("/system-info", methods=["GET"])
 def system_info():
-    return jsonify(get_system_info())
+    fast = str(request.args.get("fast", "")).lower() in {"1", "true", "yes"}
+    return jsonify(get_system_info(fast=fast))
+
+@app.route("/system-info-fast", methods=["GET"])
+def system_info_fast():
+    return jsonify(get_system_info(fast=True))
 
 @app.route("/health", methods=["GET"])
 def health():
