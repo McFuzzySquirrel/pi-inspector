@@ -34,9 +34,9 @@ Use with MCP (alternative)
 --------------------------
 If you prefer the Model Context Protocol (MCP) for cross-editor/agent portability, this project ships a tiny stdio MCP server that proxies to the same local API.
 
-- Command: `inspector-raspi-mcp --port 5050` (installed alongside `inspector-raspi`).
-- Tools exposed: `pi.health`, `pi.cpuTemp`, `pi.systemInfo`, `pi.capabilities`.
-- Ensure the HTTP API is running locally (127.0.0.1:5050) before using MCP.
+- Command: `inspector-raspi-mcp --port 5051` (installed alongside `inspector-raspi`).
+- Tools exposed: `pi.health`, `pi.cpuTemp`, `pi.systemInfo`, `pi.capabilities`, `pi.gpuInfo`, `pi.cameraInfo`, `pi.usbList`, `pi.usbWatch`.
+- Ensure the HTTP API is running locally (127.0.0.1:5051) before using MCP.
 
 Example generic MCP client config:
 ```json
@@ -44,8 +44,8 @@ Example generic MCP client config:
    "mcpServers": {
       "pi-inspector": {
          "command": "inspector-raspi-mcp",
-         "args": ["--port", "5050"],
-         "env": { "INSPECTOR_PORT": "5050" }
+         "args": ["--port", "5051"],
+         "env": { "INSPECTOR_PORT": "5051", "PORT": "5051" }
       }
    }
 }

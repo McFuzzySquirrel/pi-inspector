@@ -16,9 +16,10 @@ Planned improvements
 1) Tool coverage and schemas
    - Add minimal JSON Schemas to tools for better argument validation.
    - Add `pi.gpuInfo` and `pi.cameraInfo` (summaries extracted from /system-info) as read-only tools.
+   - Add `pi.usbList` and `pi.usbWatch` (session-scoped diffing; TTL hint ~3s) for hot-plug visibility.
 2) Performance & resilience
    - Tighten timeouts and degrade gracefully (return partials with reason fields).
-   - Cache expensive probes per-process for a few seconds (e.g., pip list).
+   - Cache expensive probes per-process for a few seconds (e.g., pip list, lsusb).
 3) Security & privacy
    - Double-check masking of serials and network identifiers.
    - Keep binding strictly to 127.0.0.1; document security posture.
@@ -44,6 +45,8 @@ Open questions
 Next steps
 ----------
 - [ ] Add schemas and two new tools (gpuInfo, cameraInfo).
+- [x] Add USB tools: `pi.usbList` and `pi.usbWatch`.
 - [ ] Add short-lived cache in API for pip list and lsusb.
 - [ ] Add docs: MCP quick guide + VS Code settings to auto-config.
 - [ ] Optional: VS Code command to open mcp.json for editing and validate path.
+ - [ ] Add README examples for `pi.usbWatch` usage and TTL note.

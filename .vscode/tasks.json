@@ -11,7 +11,11 @@
 			],
 			"isBackground": true,
 			"group": "build",
-			"presentation": { "reveal": "never", "panel": "dedicated", "clear": false }
+			"presentation": {
+				"reveal": "never",
+				"panel": "dedicated",
+				"clear": false
+			}
 		},
 		{
 			"label": "Run Pi Inspector API (5051)",
@@ -23,7 +27,11 @@
 			],
 			"isBackground": true,
 			"group": "build",
-			"presentation": { "reveal": "never", "panel": "dedicated", "clear": false }
+			"presentation": {
+				"reveal": "never",
+				"panel": "dedicated",
+				"clear": false
+			}
 		},
 		{
 			"label": "Install (editable)",
@@ -46,7 +54,11 @@
 			],
 			"isBackground": true,
 			"group": "build",
-			"presentation": { "reveal": "never", "panel": "dedicated", "clear": false }
+			"presentation": {
+				"reveal": "never",
+				"panel": "dedicated",
+				"clear": false
+			}
 		},
 		{
 			"label": "Run inspector-raspi (5053)",
@@ -58,7 +70,25 @@
 			],
 			"isBackground": true,
 			"group": "build",
-			"presentation": { "reveal": "never", "panel": "dedicated", "clear": false }
+			"presentation": {
+				"reveal": "never",
+				"panel": "dedicated",
+				"clear": false
+			}
+		},
+		{
+			"label": "Install (editable)",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"source .venv/bin/activate && pip install -e ."
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$pytest"
+			],
+			"group": "build"
 		}
 	]
 }

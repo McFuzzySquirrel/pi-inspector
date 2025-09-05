@@ -194,7 +194,9 @@ class StdioJsonRpc:
 class McpHandler:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
-        self._cache: Dict[str, Tuple[float, Any]] = {}
+        self._cache = {}
+        # Session-scoped previous snapshots for simple watch-style tools
+        self._usb_prev = None
 
     def _http_json_cached(self, path: str, ttl: float = 3.0) -> Any:
         url = f"{self.base_url}{path}"
@@ -218,6 +220,13 @@ class McpHandler:
     def on_tools_list(self, params: JSON) -> JSON:
         # Minimal JSON Schemas (empty objects)
         empty_obj = {"type": "object", "properties": {}, "additionalProperties": False}
+        usb_watch_schema = {
+            "type": "object",
+            "properties": {
+                "reset": {"type": "boolean", "description": "If true, clear previous snapshot before diffing"}
+            },
+            "additionalProperties": False,
+        }
         return {
             "tools": [
                 {"name": "pi.health", "description": "Get inspector health", "inputSchema": empty_obj},
@@ -227,6 +236,7 @@ class McpHandler:
                 {"name": "pi.gpuInfo", "description": "GPU details extracted from system info", "inputSchema": empty_obj},
                 {"name": "pi.cameraInfo", "description": "Camera/video device summary from system info and capabilities", "inputSchema": empty_obj},
                 {"name": "pi.usbList", "description": "List USB devices (lsusb summary)", "inputSchema": empty_obj},
+                {"name": "pi.usbWatch", "description": "Watch USB devices; returns current list plus added/removed since last call", "inputSchema": usb_watch_schema},
             ]
         }
 
@@ -260,6 +270,38 @@ class McpHandler:
             sysinfo = self._http_json_cached("/system-info")
             usb = sysinfo.get("usb", {}) if isinstance(sysinfo, dict) else {}
             data = usb.get("lsusb", []) if isinstance(usb, dict) else []
+        elif name == "pi.usbWatch":
+            # Optional args: { reset?: bool }
+            args = params.get("arguments") or {}
+            reset = bool(args.get("reset", False)) if isinstance(args, dict) else False
+
+            sysinfo = self._http_json_cached("/system-info")
+            usb = sysinfo.get("usb", {}) if isinstance(sysinfo, dict) else {}
+            now_list = usb.get("lsusb", []) if isinstance(usb, dict) else []
+            now_set = set([str(x) for x in now_list])
+            now_ts = time.time()
+
+            # If reset requested or no previous snapshot, treat all as added
+            if reset or self._usb_prev is None:
+                added = sorted(now_set)
+                removed: list[str] = []
+            else:
+                prev_set = self._usb_prev[1]
+                added = sorted(now_set - prev_set)
+                removed = sorted(prev_set - now_set)
+
+            # Save snapshot
+            self._usb_prev = (now_ts, now_set)
+
+            data = {
+                "devices": sorted(now_set),
+                "added": added,
+                "removed": removed,
+                "changed": bool(added or removed),
+                "count": len(now_set),
+                "timestamp": int(now_ts),
+                "ttl_hint_seconds": 3,  # matches server-side cache TTL
+            }
         else:
             raise ValueError(f"Unknown tool: {name}")
 

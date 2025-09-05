@@ -133,12 +133,19 @@ Quiet mode and ports
 - Default port is 5050. You can change with `--port`, or env vars `INSPECTOR_PORT`/`PORT`.
 - In this workspace, VS Code tasks use 5051 by default and set the env so Copilot-launched MCP instances hit the right port.
 
+USB quick checks (hot-plug)
+---------------------------
+- List devices via MCP: `pi.usbList` (summary from `lsusb`).
+- Watch for changes: `pi.usbWatch` returns current devices plus added/removed since the last call in this session.
+	- Optional arg: `{ "reset": true }` to reseed the snapshot.
+	- TTL hint ~3s (system info cache), so very fast plug/unplug may take a moment to reflect.
+
 MCP server (portable tools for other agents)
 --------------------------------------------
 The MCP server is a tiny stdio process that exposes the same tools and proxies them to the local HTTP API. It only runs when a client launches it and is otherwise idle—no background service needed.
 
 - Install (already included when you `pipx install .`): provides `inspector-raspi-mcp`.
-- Tools exposed: `pi.health`, `pi.cpuTemp`, `pi.systemInfo`, `pi.capabilities`.
+- Tools exposed: `pi.health`, `pi.cpuTemp`, `pi.systemInfo`, `pi.capabilities`, `pi.gpuInfo`, `pi.cameraInfo`, `pi.usbList`, `pi.usbWatch`.
 - Port selection: `--port 5051` (workspace default) or environment `INSPECTOR_PORT`/`PORT`.
 
 Run a quick smoke (manual):
@@ -155,7 +162,7 @@ Example client configuration (Claude Desktop tool window or generic MCP client):
 		"pi-inspector": {
 			"command": "inspector-raspi-mcp",
 			"args": ["--port", "5051"],
-			"env": { "INSPECTOR_PORT": "5050" }
+			"env": { "INSPECTOR_PORT": "5051", "PORT": "5051" }
 		}
 	}
 }
@@ -163,11 +170,13 @@ Example client configuration (Claude Desktop tool window or generic MCP client):
 
 Try it (roundtrip test):
 ```bash
-# In one terminal: ensure the HTTP API is running locally
-inspector-raspi -p 5050 --quiet
+# In one terminal: ensure the HTTP API is running locally on 5051
+inspector-raspi -p 5051 --quiet
 
-# In another terminal: run the stdio roundtrip test
-python3 scripts/mcp_roundtrip.py --port 5050 --tool pi.systemInfo
+# In another terminal: run stdio roundtrip tests
+python3 scripts/mcp_roundtrip.py --port 5051 --tool pi.systemInfo
+python3 scripts/mcp_roundtrip.py --port 5051 --tool pi.usbList
+python3 scripts/mcp_roundtrip.py --port 5051 --tool pi.usbWatch --args '{"reset": true}' --repeat 2 --sleep 0.5
 ```
 
 VS Code user-level MCP config (Toolsets):
@@ -178,8 +187,8 @@ Create `~/.config/Code/User/mcp.json` with:
 		"pi-inspector": {
 			"type": "stdio",
 			"command": "/home/<user>/.local/bin/inspector-raspi-mcp",
-			"args": ["--port", "5050"],
-			"env": { "INSPECTOR_PORT": "5050" }
+			"args": ["--port", "5051"],
+			"env": { "INSPECTOR_PORT": "5051", "PORT": "5051" }
 		}
 	},
 	"inputs": []

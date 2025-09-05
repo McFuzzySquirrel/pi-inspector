@@ -29,13 +29,14 @@ Agent operating rules
 
 Tools and how to call them
 --------------------------
-- OpenAPI tool (local HTTP): base http://127.0.0.1:5050
+- OpenAPI tool (local HTTP): base http://127.0.0.1:5051 (workspace default)
   - GET /health → { status }
   - GET /cpu-temp → { cpu_temp_c }
   - GET /capabilities → { ...booleans }
   - GET /system-info → rich system JSON
 - MCP tools (stdio server inspector-raspi-mcp):
-  - pi.health, pi.cpuTemp, pi.systemInfo, pi.capabilities
+  - pi.health, pi.cpuTemp, pi.systemInfo, pi.capabilities, pi.gpuInfo, pi.cameraInfo, pi.usbList, pi.usbWatch
+  - usbWatch returns { devices[], added[], removed[], changed, count, timestamp, ttl_hint_seconds }
 
 Response pattern for the agent
 ------------------------------
@@ -69,8 +70,9 @@ Quick examples
 Operational notes
 -----------------
 - The API binds to 127.0.0.1 by default; keep it local for privacy.
-- Start on demand to minimize footprint: `systemd-run --user --unit=pi-inspector --same-dir ~/.local/bin/inspector-raspi -p 5050`.
-- For MCP, VS Code Toolsets can auto-launch inspector-raspi-mcp; the API must be running first.
+- Start on demand to minimize footprint: `systemd-run --user --unit=pi-inspector --same-dir ~/.local/bin/inspector-raspi -p 5051 --quiet`.
+- For MCP, VS Code Toolsets can auto-launch inspector-raspi-mcp; ensure the API is running first on the same port (5051 by default in this workspace).
+- USB inventory TTL is about 3s; allow a brief delay after hot-plug before expecting changes.
 
 Prompts the agent can use
 -------------------------

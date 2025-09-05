@@ -69,7 +69,10 @@ def _recv_until_id(proc: subprocess.Popen, target_id: int, max_scans: int = 8) -
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="MCP roundtrip tester for inspector-raspi")
     ap.add_argument("--port", type=int, default=int(os.getenv("INSPECTOR_PORT", os.getenv("PORT", 5050))), help="Local inspector API port")
-    ap.add_argument("--tool", type=str, default="pi.health", help="Tool to call: pi.health | pi.cpuTemp | pi.systemInfo | pi.capabilities")
+    ap.add_argument("--tool", type=str, default="pi.health", help="Tool to call: pi.health | pi.cpuTemp | pi.systemInfo | pi.capabilities | pi.usbList | pi.usbWatch")
+    ap.add_argument("--args", type=str, default="{}", help='JSON object of tool arguments, e.g., {"reset":true} for pi.usbWatch')
+    ap.add_argument("--repeat", type=int, default=1, help="Call the tool N times (useful for watch tools).")
+    ap.add_argument("--sleep", type=float, default=1.0, help="Seconds to sleep between repeated tool calls.")
     ap.add_argument("--launch", choices=["module", "command"], default="command", help="How to launch server: console command (default) or Python module")
     args = ap.parse_args(argv)
 
@@ -96,9 +99,22 @@ def main(argv: list[str] | None = None) -> int:
     _send(proc, {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
     print("tools/list:", _recv_until_id(proc, 2))
 
-    # tools/call
-    _send(proc, {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": args.tool, "arguments": {}}})
-    print(f"tools/call {args.tool}:", _recv_until_id(proc, 3))
+    # tools/call (possibly repeated)
+    try:
+        tool_args = json.loads(args.args)
+        if not isinstance(tool_args, dict):
+            raise ValueError("--args must be a JSON object")
+    except Exception as e:
+        print(f"Invalid --args JSON: {e}")
+        return 2
+
+    for i in range(1, max(1, args.repeat) + 1):
+        call_id = 2 + i + 1  # ensure unique IDs after tools/list
+        _send(proc, {"jsonrpc": "2.0", "id": call_id, "method": "tools/call", "params": {"name": args.tool, "arguments": tool_args}})
+        print(f"tools/call {args.tool} [{i}/{args.repeat}]:", _recv_until_id(proc, call_id))
+        if i < args.repeat:
+            import time as _t
+            _t.sleep(max(0.0, args.sleep))
 
     # shutdown
     _send(proc, {"jsonrpc": "2.0", "id": 4, "method": "shutdown", "params": {}})
