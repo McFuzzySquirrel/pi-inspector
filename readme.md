@@ -147,6 +147,13 @@ Create `~/.config/Code/User/mcp.json` with:
 ```
 Then restart VS Code. The MCP server will be spawned on demand by Toolsets, keeping resource usage minimal.
 
+No prompts (auto-config)
+------------------------
+To skip the "auto-configure tools for this chat" banner every time:
+- Trust the workspace (Command Palette → "Workspaces: Manage Workspace Trust" → Trust).
+- Open Settings and search for "Auto Configure Tools"; set it to Always.
+- When the banner appears, choose the "Always auto-configure" or "Don't ask again" option.
+
 Notes:
 - Ensure the HTTP API is running (see Usage above). The MCP server simply proxies to it.
 - Because MCP uses stdio, you do not need systemd for it; your client will spawn it on demand, keeping resource usage minimal.
