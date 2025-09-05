@@ -69,7 +69,30 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage(`Pi Inspector: USB devices found: ${list.length}`);
   });
 
-  context.subscriptions.push(cmdHealth, cmdCapabilities, cmdRegisterTools, cmdShowOutput, cmdUsbList, output);
+  // Keep a simple in-memory snapshot for a one-shot USB diff
+  let prevUsbSet: Set<string> | null = null;
+  const cmdUsbWatch = vscode.commands.registerCommand('piInspector.usbWatch', async () => {
+    output.appendLine('[Pi Inspector] Command: USB Watch (diff since last run)');
+    const data = await fetchJson('/system-info');
+    const list: string[] = (data && data.usb && Array.isArray(data.usb.lsusb)) ? data.usb.lsusb : [];
+    const now = new Set(list.map(String));
+    let added: string[] = [];
+    let removed: string[] = [];
+    if (prevUsbSet) {
+      added = [...now].filter(x => !prevUsbSet!.has(x)).sort();
+      removed = [...prevUsbSet].filter(x => !now.has(x)).sort();
+    } else {
+      added = [...now].sort();
+    }
+    prevUsbSet = now;
+    const summary = { count: now.size, addedCount: added.length, removedCount: removed.length };
+    output.appendLine(`[Pi Inspector] USB Watch summary -> ${JSON.stringify(summary)}`);
+    if (added.length) output.appendLine(`[Pi Inspector] Added: ${JSON.stringify(added)}`);
+    if (removed.length) output.appendLine(`[Pi Inspector] Removed: ${JSON.stringify(removed)}`);
+    vscode.window.showInformationMessage(`Pi Inspector: USB count ${now.size}, +${added.length}, -${removed.length}`);
+  });
+
+  context.subscriptions.push(cmdHealth, cmdCapabilities, cmdRegisterTools, cmdShowOutput, cmdUsbList, cmdUsbWatch, output);
 
   // Register a Chat Participant so users can @Pi Inspector in Copilot Chat
   try {

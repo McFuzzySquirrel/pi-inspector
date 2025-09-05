@@ -18,6 +18,7 @@ Quick start
    - Pi Inspector: Health (`piInspector.health`)
    - Pi Inspector: Capabilities (`piInspector.capabilities`)
    - Pi Inspector: USB List (`piInspector.usbList`) – shows `lsusb` summary in the Output channel
+   - Pi Inspector: USB Watch (Diff) (`piInspector.usbWatch`) – compares current `lsusb` snapshot to the last run and logs added/removed
 
 Install from VSIX
 -----------------

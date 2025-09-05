@@ -19,7 +19,8 @@
   { "command": "piInspector.capabilities", "title": "Pi Inspector: Capabilities" },
   { "command": "piInspector.registerTools", "title": "Pi Inspector: Register LM Tools" },
   { "command": "piInspector.showOutput", "title": "Pi Inspector: Show Output" },
-  { "command": "piInspector.usbList", "title": "Pi Inspector: USB List" }
+  { "command": "piInspector.usbList", "title": "Pi Inspector: USB List" },
+  { "command": "piInspector.usbWatch", "title": "Pi Inspector: USB Watch (Diff)" }
     ],
     "chatParticipants": [
       {
