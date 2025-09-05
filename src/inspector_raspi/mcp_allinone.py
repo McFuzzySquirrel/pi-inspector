@@ -3,10 +3,10 @@ All-in-one MCP server that embeds the local API lifecycle.
 
 Behavior:
 - Finds an available localhost port (prefers --port if free, else picks ephemeral).
-- Starts the inspector API as a child process with --quiet, bound to that port.
+- Starts the inspector API in-process (quiet) bound to that port using a WSGI server.
 - Waits for /health to succeed.
 - Runs the MCP stdio server (no unsolicited stdout) proxying to the embedded API.
-- On shutdown/exit, terminates the API process cleanly.
+- On shutdown/exit, stops the embedded API server cleanly.
 
 Notes:
 - Absolutely avoid printing to stdout; use stderr for rare diagnostics.
@@ -17,7 +17,7 @@ from __future__ import annotations
 import argparse
 import os
 import socket
-import subprocess
+import threading
 import sys
 import time
 import urllib.error
@@ -25,6 +25,8 @@ import urllib.request
 from typing import Optional
 
 from .mcp_server import StdioJsonRpc, McpHandler
+from .__main__ import create_app
+from werkzeug.serving import make_server
 
 
 def _port_is_free(port: int) -> bool:
@@ -76,27 +78,29 @@ def main(argv: Optional[list[str]] = None) -> int:
     api_port = _pick_port(args.port)
     base_url = f"http://127.0.0.1:{api_port}"
 
-    # Start API quietly as a child process. Ensure no stdout noise.
-    cmd = [
-        sys.executable,
-        "-m",
-        "inspector_raspi.__main__",
-        "-p",
-        str(api_port),
-        "--quiet",
-    ]
-
-    # Route child's stdout to DEVNULL to guarantee clean stdio for MCP; keep stderr for debugging.
+    # Start API in-process via a WSGI server; suppress noisy logs.
+    app = create_app()
     try:
-        api_proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        # Reduce werkzeug logging
+        import logging
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)
+    except Exception:
+        pass
+    try:
+        server = make_server('127.0.0.1', api_port, app)
     except Exception as e:  # noqa: BLE001
-        sys.stderr.write(f"[inspector-raspi-mcp-all] Failed to start API: {e}\n")
+        sys.stderr.write(f"[inspector-raspi-mcp-all] Failed to bind API: {e}\n")
         sys.stderr.flush()
         return 1
+
+    def _serve():
+        try:
+            server.serve_forever()
+        except Exception:
+            pass
+
+    api_thread = threading.Thread(target=_serve, name="inspector-api", daemon=True)
+    api_thread.start()
 
     # Optionally wait for health
     ok = True if args.no_wait else _wait_health(base_url, timeout=10.0)
@@ -119,14 +123,9 @@ def main(argv: Optional[list[str]] = None) -> int:
             pass
         exit_code = 1
     finally:
-        # Tear down API child
+        # Stop embedded API server
         try:
-            if api_proc.poll() is None:
-                api_proc.terminate()
-                try:
-                    api_proc.wait(timeout=2.0)
-                except Exception:
-                    api_proc.kill()
+            server.shutdown()
         except Exception:
             pass
 

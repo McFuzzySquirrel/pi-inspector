@@ -24,6 +24,39 @@ curl -s http://127.0.0.1:5051/health
 	- VS Code extension: install the `.vsix` from `extensions/pi-inspector/`, then run “Pi Inspector: Health” or “Pi Inspector: Capabilities”.
 	- Copilot (MCP): Copilot will launch the MCP server on demand; no terminal needed.
 
+Quickstart: MCP (all-in-one, no separate API)
+--------------------------------------------
+If you only want the MCP and don’t want to run the API separately, use the all-in-one server.
+
+Install (pipx recommended):
+```bash
+sudo apt-get update && sudo apt-get install -y pipx
+pipx ensurepath
+pipx install git+https://github.com/McFuzzySquirrel/pi-inspector.git
+```
+
+VS Code user MCP config (`~/.config/Code/User/mcp.json`):
+```json
+{
+	"servers": {
+		"pi-inspector": {
+			"type": "stdio",
+			"command": "/home/$(whoami)/.local/bin/inspector-raspi-mcp-all",
+			"args": ["--port", "5051"],
+			"env": { "INSPECTOR_PORT": "5051" }
+		}
+	}
+}
+```
+Reload VS Code; Copilot/Toolsets will auto-launch it when needed.
+
+Optional CLI smoke-test:
+```bash
+inspector-raspi-mcp-all --port 5051
+# In another terminal (repo optional):
+python scripts/mcp_roundtrip.py --port 5051 --tool pi.usbList
+```
+
 CLI quickstart (no VS Code required)
 ------------------------------------
 Option A: pipx (isolated)
