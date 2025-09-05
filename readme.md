@@ -54,7 +54,7 @@ Optional CLI smoke-test:
 ```bash
 inspector-raspi-mcp-all --port 5051
 # In another terminal (repo optional):
-python scripts/mcp_roundtrip.py --port 5051 --tool pi.usbList
+python scripts/mcp_roundtrip.py --port 5051 --tool pi-usb-list
 ```
 
 CLI quickstart (no VS Code required)
@@ -168,8 +168,8 @@ Quiet mode and ports
 
 USB quick checks (hot-plug)
 ---------------------------
-- List devices via MCP: `pi.usbList` (summary from `lsusb`).
-- Watch for changes: `pi.usbWatch` returns current devices plus added/removed since the last call in this session.
+- List devices via MCP: `pi-usb-list` (summary from `lsusb`).
+- Watch for changes: `pi-usb-watch` returns current devices plus added/removed since the last call in this session.
 	- Optional arg: `{ "reset": true }` to reseed the snapshot.
 	- TTL hint ~3s (system info cache), so very fast plug/unplug may take a moment to reflect.
 
@@ -179,6 +179,7 @@ The MCP server is a tiny stdio process that exposes the same tools and proxies t
 
 - Install (already included when you `pipx install .`): provides `inspector-raspi-mcp` and `inspector-raspi-mcp-all`.
 - Tools exposed: `pi-health`, `pi-cpu-temp`, `pi-system-info`, `pi-capabilities`, `pi-gpu-info`, `pi-camera-info`, `pi-usb-list`, `pi-usb-watch`.
+	- Note: hyphen-case is the canonical naming; legacy dotted names (e.g., `pi.health`, `pi.usbList`) are accepted as aliases.
 - Port selection: `--port 5051` (workspace default) or environment `INSPECTOR_PORT`/`PORT`.
 
 Run a quick smoke (manual):
@@ -256,9 +257,46 @@ Troubleshooting
 
 Configure
 ---------
-- -p/--port CLI flag takes precedence.
-- PORT or INSPECTOR_PORT env var can change the port.
-- Binding is restricted to 127.0.0.1 by default.
+- API binary (`inspector-raspi`):
+	- Flags: `-p/--port`, `-q/--quiet`
+	- Env: `INSPECTOR_PORT` or `PORT` to set the port when flags aren’t provided
+	- Notes: binds to 127.0.0.1 only; use shell redirection to silence output: `inspector-raspi -p 5051 --quiet >/dev/null 2>&1 &`
+
+- MCP (stdio) proxy (`inspector-raspi-mcp`):
+	- Flag: `--port` (API port to call)
+	- Env: `INSPECTOR_PORT`/`PORT` (API port), `MCP_HTTP_TIMEOUT` (default 6.0s), `MCP_DEBUG=1` (stderr trace)
+
+- All-in-one MCP (`inspector-raspi-mcp-all`):
+	- Flags: `--port` (preferred API port to bind), `--no-wait` (don’t wait on `/health`)
+	- Env: `INSPECTOR_PORT`/`PORT` (preferred API port), `MCP_HTTP_TIMEOUT` (default 6.0s), `MCP_DEBUG=1` (stderr trace)
+	- Stdout is protocol-only; occasional diagnostics go to stderr. To fully silence: `inspector-raspi-mcp-all --port 5051 >/dev/null 2>&1 &`
+
+How to set env vars (binary installs):
+- One-off shell prefix: `INSPECTOR_PORT=5051 MCP_DEBUG=1 inspector-raspi-mcp-all --port 5051`
+- Persist for current shell: `export INSPECTOR_PORT=5051; export MCP_HTTP_TIMEOUT=8`
+- VS Code Toolsets (MCP) user config (`~/.config/Code/User/mcp.json`):
+	```json
+	{
+		"servers": {
+			"pi-inspector": {
+				"type": "stdio",
+				"command": "/home/<user>/.local/bin/inspector-raspi-mcp-all",
+				"args": ["--port", "5051"],
+				"env": { "INSPECTOR_PORT": "5051", "MCP_HTTP_TIMEOUT": "8" }
+			}
+		}
+	}
+	```
+- systemd-run transient (no terminal noise):
+	```bash
+	systemd-run --user --unit=pi-inspector --same-dir \
+		env INSPECTOR_PORT=5051 MCP_HTTP_TIMEOUT=8 \
+		~/.local/bin/inspector-raspi-mcp-all --port 5051
+	```
+
+Timeouts and performance notes:
+- `/system-info` can take a few seconds on a cold run. MCP calls use a 6s default timeout.
+- Increase via `MCP_HTTP_TIMEOUT` if you see tool failures on first call.
 
 Copilot Agent Mode
 ------------------
