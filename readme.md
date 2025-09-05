@@ -144,7 +144,7 @@ MCP server (portable tools for other agents)
 --------------------------------------------
 The MCP server is a tiny stdio process that exposes the same tools and proxies them to the local HTTP API. It only runs when a client launches it and is otherwise idle—no background service needed.
 
-- Install (already included when you `pipx install .`): provides `inspector-raspi-mcp`.
+- Install (already included when you `pipx install .`): provides `inspector-raspi-mcp` and `inspector-raspi-mcp-all`.
 - Tools exposed: `pi.health`, `pi.cpuTemp`, `pi.systemInfo`, `pi.capabilities`, `pi.gpuInfo`, `pi.cameraInfo`, `pi.usbList`, `pi.usbWatch`.
 - Port selection: `--port 5051` (workspace default) or environment `INSPECTOR_PORT`/`PORT`.
 
@@ -155,12 +155,19 @@ inspector-raspi-mcp --port 5051
 # Press Ctrl+C to exit
 ```
 
+All-in-one MCP (no separate API process):
+```bash
+# Spawns the API quietly on a free local port (prefers 5051) and serves MCP over stdio
+inspector-raspi-mcp-all --port 5051
+# Use in VS Code by pointing the MCP server command to inspector-raspi-mcp-all
+```
+
 Example client configuration (Claude Desktop tool window or generic MCP client):
 ```json
 {
 	"mcpServers": {
 		"pi-inspector": {
-			"command": "inspector-raspi-mcp",
+			"command": "inspector-raspi-mcp-all",
 			"args": ["--port", "5051"],
 			"env": { "INSPECTOR_PORT": "5051", "PORT": "5051" }
 		}

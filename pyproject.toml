@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "inspector-raspi"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local-only Raspberry Pi environment inspector API for Copilot Agent integrations"
 readme = "readme.md"
 requires-python = ">=3.9"
@@ -23,6 +23,7 @@ Homepage = "https://github.com/mcfuzzysquirrel/pi-inspector"
 [project.scripts]
 inspector-raspi = "inspector_raspi:main"
 inspector-raspi-mcp = "inspector_raspi.mcp_server:main"
+inspector-raspi-mcp-all = "inspector_raspi.mcp_allinone:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
