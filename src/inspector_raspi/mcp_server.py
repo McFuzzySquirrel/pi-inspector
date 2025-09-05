@@ -334,7 +334,20 @@ class McpHandler:
         return {"content": content}
 
 
-def _http_json(url: str, timeout: float = 2.0) -> Any:
+def _http_json(url: str, timeout: float = 6.0) -> Any:
+    """Fetch JSON with a sensible timeout.
+
+    Default is 6s to accommodate heavier /system-info calls. Can be overridden
+    via env MCP_HTTP_TIMEOUT or INSPECTOR_HTTP_TIMEOUT (float seconds).
+    """
+    # Env override (best-effort)
+    try:
+        t_env = os.getenv("MCP_HTTP_TIMEOUT") or os.getenv("INSPECTOR_HTTP_TIMEOUT")
+        if t_env:
+            timeout = float(t_env)
+    except Exception:
+        pass
+
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:  # nosec B310 (local API only)
         ctype = resp.headers.get("Content-Type", "")
