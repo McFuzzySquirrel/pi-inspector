@@ -2,7 +2,7 @@
   "name": "pi-inspector",
   "displayName": "Pi Inspector",
   "description": "Wires Copilot Agent Mode to a local Raspberry Pi inspector API.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "engines": { "vscode": ">=1.90.0" },
   "publisher": "mcfuzzysquirrel",
   "license": "MIT",
