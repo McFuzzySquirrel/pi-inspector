@@ -21,7 +21,7 @@ pipx ensurepath
 
 2) Install Pi Inspector from GitHub:
 ```bash
-pipx install git+https://github.com/McFuzzySquirrel/pi-inspector.git
+pipx install git+https://github.com/McFuzzySquirrel/pi-inspector.git@feature/mcp-first
 ```
 
 3) Run the all‑in‑one MCP (spawns API quietly):
@@ -52,7 +52,7 @@ Alternative (venv install)
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip
-pip install git+https://github.com/McFuzzySquirrel/pi-inspector.git
+pip install git+https://github.com/McFuzzySquirrel/pi-inspector.git@feature/mcp-first
 inspector-raspi-mcp-all --port 5051
 ```
 
