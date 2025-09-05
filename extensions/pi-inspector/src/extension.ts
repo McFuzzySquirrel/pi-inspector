@@ -183,6 +183,11 @@ function tryRegisterLmTools(context: vscode.ExtensionContext, baseUrl: string, o
   } catch (e: any) {
     output.appendLine(`[Pi Inspector] Failed to register LM tool pi.usbList: ${e?.message || e}`);
   }
+
+  // Informative note in Output about MCP-only extras
+  try {
+    output.appendLine('[Pi Inspector] Tip: Additional tools available via MCP stdio server (inspector-raspi-mcp): pi.gpuInfo, pi.cameraInfo, pi.usbWatch (session diffs).');
+  } catch {}
 }
 
 async function fetchJsonPath(baseUrl: string, path: string) {
