@@ -226,6 +226,7 @@ class McpHandler:
                 {"name": "pi.capabilities", "description": "Get detected capabilities", "inputSchema": empty_obj},
                 {"name": "pi.gpuInfo", "description": "GPU details extracted from system info", "inputSchema": empty_obj},
                 {"name": "pi.cameraInfo", "description": "Camera/video device summary from system info and capabilities", "inputSchema": empty_obj},
+                {"name": "pi.usbList", "description": "List USB devices (lsusb summary)", "inputSchema": empty_obj},
             ]
         }
 
@@ -255,6 +256,10 @@ class McpHandler:
                 "v4l2_ctl": bool(caps.get("v4l2_ctl", False)) if isinstance(caps, dict) else False,
                 "libcamera": bool(caps.get("libcamera", False)) if isinstance(caps, dict) else False,
             }
+        elif name == "pi.usbList":
+            sysinfo = self._http_json_cached("/system-info")
+            usb = sysinfo.get("usb", {}) if isinstance(sysinfo, dict) else {}
+            data = usb.get("lsusb", []) if isinstance(usb, dict) else []
         else:
             raise ValueError(f"Unknown tool: {name}")
 
