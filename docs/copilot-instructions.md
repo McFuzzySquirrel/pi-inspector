@@ -62,6 +62,7 @@ Quick examples
   - Local-first and lightweight: prefer built-ins and existing tools. Avoid heavy installs unless the user asks.
   - Ask only when essential: otherwise make a reasonable assumption, state it, proceed.
   - Output style: keep answers short with concrete steps; end with a “Try this” action.
+  - MCP-only preference: never propose shell commands when an equivalent MCP tool exists. Discover via `tools/list`, then call the tool. Use shell only if no MCP tool covers the request, and mark it as optional.
 
   MCP server
   - Name: pi-inspector
