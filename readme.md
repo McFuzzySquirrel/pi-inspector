@@ -113,6 +113,12 @@ CLI helpers
 - `raspi-capabilities` – print capabilities JSON directly (no MCP framing)
 - `raspi-mcp-selftest` – run all tools via MCP and report PASS/FAIL
 
+Copilot / Agent usage
+---------------------
+- See `docs/copilot-instructions.md` for minimal Agent Mode guidance.
+- The agent should detect capabilities first, then only suggest actions that work with your hardware/software.
+- When something is missing but clearly unlocks your goal, it will propose the smallest install (apt/pip) as an optional step.
+
 Develop (this repo)
 -------------------
 ```bash
