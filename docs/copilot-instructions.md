@@ -68,15 +68,17 @@ Quick examples
   - Type: stdio
   - Command: `raspi-mcp`
 
-  Available tools
-  - Health/CPU: `pi-health`, `pi-cpu-temp`, `pi-cpu-freq`, `pi-throttle-status`
+  Dynamic discovery (required)
+  - On initialize, list tools via MCP `tools/list`; cache names, descriptions, and params for the session.
+  - Refresh the cache if `serverInfo.version` changes or a call returns “method not found”.
+  - Use tool descriptions and params for prompting; do not rely on hard-coded names.
+
+  Core examples (not exhaustive)
+  - Health/CPU: `pi-health`, `pi-cpu-temp`
   - Capabilities/System: `pi-capabilities`, `pi-system-info`
-  - GPU/Power: `pi-gpu-info`, `pi-power`
-  - Cameras: `pi-camera-info`, `pi-v4l2-formats`
-  - USB: `pi-usb-list`, `pi-usb-tree`, `pi-usb-watch`
-  - Network: `pi-net-interfaces`, `pi-wifi-status`
+  - USB: `pi-usb-list`, `pi-usb-watch`
   - Logs/Services: `pi-dmesg-tail` (args: `lines`, `reset`), `pi-services`
-  - I2C/Thermal: `pi-i2c-scan`, `pi-thermal-zones`
+  - Cameras/Video: `pi-camera-info`, `pi-v4l2-formats`
 
   Capability gates (examples)
   - If `vcgencmd` is available: use it for temps/throttle/power; else read from `/sys/class/thermal/*`.
