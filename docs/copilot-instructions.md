@@ -50,32 +50,54 @@ Quick examples
 - CPU temperature (Python using thermal zone fallback):
   ```python
   from pathlib import Path
-  p = Path('/sys/class/thermal/thermal_zone0/temp')
-  print(round(int(p.read_text().strip())/1000.0, 1))
-  ```
-- CPU temperature (shell):
-  ```bash
-  vcgencmd measure_temp || awk '{print $1/1000}' /sys/class/thermal/thermal_zone0/temp
-  ```
-- List video devices with V4L2:
-  ```bash
-  ls -1 /dev/video* 2>/dev/null || true
-  v4l2-ctl --all --device=/dev/video0 2>/dev/null | sed -n '1,40p'
-  ```
-- Record 5s video from /dev/video0 with ffmpeg:
-  ```bash
-  ffmpeg -f v4l2 -framerate 30 -i /dev/video0 -t 5 out.mp4
-  ```
+  # Pi Inspector – Minimal Agent Instructions (stdio-only)
 
-Operational notes
------------------
-- The API binds to 127.0.0.1 by default; keep it local for privacy.
-- Start on demand to minimize footprint: `systemd-run --user --unit=pi-inspector --same-dir ~/.local/bin/inspector-raspi -p 5051 --quiet`.
-- For MCP, VS Code Toolsets can auto-launch either `inspector-raspi-mcp` (requires API running) or `inspector-raspi-mcp-all` (spawns the API internally).
-- USB inventory TTL is about 3s; allow a brief delay after hot-plug before expecting changes.
+  Purpose
+  - Use local Raspberry Pi diagnostics safely via the stdio MCP server `raspi-mcp`.
+  - No HTTP server, no OpenAPI, no curl. Everything goes through MCP tools.
 
-Prompts the agent can use
--------------------------
-- "Check pi capabilities, then propose a local-only way to capture a snapshot from the first camera device. Avoid libcamera."
-- "Verify if ffmpeg is available; if yes, give a minimal command to transcode a video to H.264."
-- "Confirm whether any ML runtimes are installed; if none, suggest the smallest runtime to run a MobileNet and how to install it, but keep it optional."
+  Golden rules
+  - Detect first, act second: call `pi-capabilities` at the start; call `pi-system-info` only when needed.
+  - Gate suggestions by capabilities: only propose steps that work now; if something missing clearly unlocks the goal, suggest the smallest optional install.
+  - Local-first and lightweight: prefer built-ins and existing tools. Avoid heavy installs unless the user asks.
+  - Ask only when essential: otherwise make a reasonable assumption, state it, proceed.
+  - Output style: keep answers short with concrete steps; end with a “Try this” action.
+
+  MCP server
+  - Name: pi-inspector
+  - Type: stdio
+  - Command: `raspi-mcp`
+
+  Available tools
+  - Health/CPU: `pi-health`, `pi-cpu-temp`, `pi-cpu-freq`, `pi-throttle-status`
+  - Capabilities/System: `pi-capabilities`, `pi-system-info`
+  - GPU/Power: `pi-gpu-info`, `pi-power`
+  - Cameras: `pi-camera-info`, `pi-v4l2-formats`
+  - USB: `pi-usb-list`, `pi-usb-tree`, `pi-usb-watch`
+  - Network: `pi-net-interfaces`, `pi-wifi-status`
+  - Logs/Services: `pi-dmesg-tail` (args: `lines`, `reset`), `pi-services`
+  - I2C/Thermal: `pi-i2c-scan`, `pi-thermal-zones`
+
+  Capability gates (examples)
+  - If `vcgencmd` is available: use it for temps/throttle/power; else read from `/sys/class/thermal/*`.
+  - If `video_dev` and `v4l2_ctl` exist and libcamera is absent: use V4L2 `/dev/video*` instead of libcamera.
+  - If `ffmpeg` is available: prefer it for capture/transcode; otherwise suggest installing it (optional).
+  - If `docker` is unavailable: avoid Docker-based approaches; use system packages or venv.
+
+  Example flows
+  - “List USB devices” → call `pi-usb-list` → return JSON and highlight key devices.
+  - “Tail dmesg 20 lines” → call `pi-dmesg-tail` with `{ "lines": 20 }`.
+  - “Watch USB then reset” → call `pi-usb-watch`, later call with `{ "reset": true }`.
+  - “Show camera formats” → call `pi-v4l2-formats`; if missing `v4l2-ctl`, suggest `sudo apt-get install -y v4l-utils` (optional).
+
+  Suggested installs (only when they unlock the request)
+  - System tools (apt): ffmpeg, v4l2-ctl (v4l-utils), usbutils, i2c-tools, wireless-tools, vulkan-tools
+  - Python libs (pip in venv): opencv-python-headless, onnxruntime, tflite-runtime, torch (device/arch-dependent)
+
+  Safety & privacy
+  - Stay on-device. Don’t exfiltrate unique identifiers. Ask before changing system state or installing.
+
+  Maintenance
+  - Owner: @mcfuzzysquirrel
+  - Last updated: 2025-09-06
+- "If vcgencmd exists, get throttle flags; otherwise read temps from thermal zones and report only what’s available."
