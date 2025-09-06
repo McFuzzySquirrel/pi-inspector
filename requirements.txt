@@ -1,4 +1,1 @@
-# Runtime dependencies for inspector-raspi
-# Keep this in sync with [project.dependencies] in pyproject.toml
-flask
-psutil
+# No runtime dependencies; raspi-mcp is stdio-only

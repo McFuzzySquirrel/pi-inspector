@@ -1,7 +1,3 @@
 {
-    "chat.mcp.autostart": "newAndOutdated",
-    "terminal.integrated.env.linux": {
-        "INSPECTOR_PORT": "5051",
-        "PORT": "5051"
-    }
+    "chat.mcp.autostart": "newAndOutdated"
 }

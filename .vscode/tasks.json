@@ -2,36 +2,15 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Run Pi Inspector API",
+			"label": "Install (editable)",
 			"type": "shell",
 			"command": "bash",
 			"args": [
 				"-lc",
-				"source .venv/bin/activate && python \"src/inspector_raspi/__main__.py\" --quiet"
+				"source .venv/bin/activate && pip install -e ."
 			],
-			"isBackground": true,
-			"group": "build",
-			"presentation": {
-				"reveal": "never",
-				"panel": "dedicated",
-				"clear": false
-			}
-		},
-		{
-			"label": "Run Pi Inspector API (5051)",
-			"type": "shell",
-			"command": "bash",
-			"args": [
-				"-lc",
-				"source .venv/bin/activate && PORT=5051 python \"src/inspector_raspi/__main__.py\" --quiet"
-			],
-			"isBackground": true,
-			"group": "build",
-			"presentation": {
-				"reveal": "never",
-				"panel": "dedicated",
-				"clear": false
-			}
+			"isBackground": false,
+			"group": "build"
 		},
 		{
 			"label": "Install (editable)",
@@ -45,36 +24,15 @@
 			"group": "build"
 		},
 		{
-			"label": "Run inspector-raspi (local)",
+			"label": "Install (editable)",
 			"type": "shell",
 			"command": "bash",
 			"args": [
 				"-lc",
-				"source .venv/bin/activate && PORT=5052 inspector-raspi --quiet"
+				"source .venv/bin/activate && pip install -e ."
 			],
-			"isBackground": true,
-			"group": "build",
-			"presentation": {
-				"reveal": "never",
-				"panel": "dedicated",
-				"clear": false
-			}
-		},
-		{
-			"label": "Run inspector-raspi (5053)",
-			"type": "shell",
-			"command": "bash",
-			"args": [
-				"-lc",
-				"source .venv/bin/activate && PORT=5053 inspector-raspi --quiet"
-			],
-			"isBackground": true,
-			"group": "build",
-			"presentation": {
-				"reveal": "never",
-				"panel": "dedicated",
-				"clear": false
-			}
+			"isBackground": false,
+			"group": "build"
 		},
 		{
 			"label": "Install (editable)",
@@ -85,9 +43,17 @@
 				"source .venv/bin/activate && pip install -e ."
 			],
 			"isBackground": false,
-			"problemMatcher": [
-				"$pytest"
+			"group": "build"
+		},
+		{
+			"label": "Install (editable)",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"source .venv/bin/activate && pip install -e ."
 			],
+			"isBackground": false,
 			"group": "build"
 		}
 	]

@@ -12,18 +12,15 @@ license = { text = "MIT" }
 authors = [
 	{ name = "mcfuzzysquirrel" }
 ]
-dependencies = [
-	"flask",
-	"psutil",
-]
+dependencies = []
 
 [project.urls]
 Homepage = "https://github.com/mcfuzzysquirrel/pi-inspector"
 
 [project.scripts]
-inspector-raspi = "inspector_raspi:main"
-inspector-raspi-mcp = "inspector_raspi.mcp_server:main"
-inspector-raspi-mcp-all = "inspector_raspi.mcp_allinone:main"
+raspi-mcp = "inspector_raspi.mcp_standalone:main"
+raspi-capabilities = "inspector_raspi.cli:capabilities_cmd"
+raspi-mcp-selftest = "inspector_raspi.selftest:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

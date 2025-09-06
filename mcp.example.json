@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "pi-inspector": {
+      "type": "stdio",
+      "command": "raspi-mcp"
+    }
+  }
+}

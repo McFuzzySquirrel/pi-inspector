@@ -74,13 +74,32 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repeat", type=int, default=1, help="Call the tool N times (useful for watch tools).")
     ap.add_argument("--sleep", type=float, default=1.0, help="Seconds to sleep between repeated tool calls.")
     ap.add_argument("--launch", choices=["module", "command"], default="command", help="How to launch server: console command (default) or Python module")
+    ap.add_argument(
+        "--bin",
+        type=str,
+        default="inspector-raspi-mcp",
+        help=(
+            "Console script to run when --launch=command. "
+            "Use 'inspector-raspi-mcp' (split mode, requires API running) or 'inspector-raspi-mcp-all' (all-in-one)."
+        ),
+    )
+    ap.add_argument(
+        "--module",
+        type=str,
+        default="inspector_raspi.mcp_server",
+        help=(
+            "Python module to run when --launch=module. "
+            "Use 'inspector_raspi.mcp_server' (HTTP proxy) or 'inspector_raspi.mcp_standalone' (stdio-only)."
+        ),
+    )
     args = ap.parse_args(argv)
 
     # Launch the MCP server on stdio
     if args.launch == "module":
-        cmd = [sys.executable, "-m", "inspector_raspi.mcp_server", "--port", str(args.port)]
+        cmd = [sys.executable, "-m", args.module, "--port", str(args.port)]
     else:
-        cmd = ["inspector-raspi-mcp", "--port", str(args.port)]
+        # Allow choosing the console script (default: inspector-raspi-mcp). For all-in-one: inspector-raspi-mcp-all
+        cmd = [args.bin, "--port", str(args.port)]
 
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # If the process exits immediately, surface stderr to help diagnose (e.g., missing module)
